@@ -1,9 +1,13 @@
 import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../types/navigation';
+
+type SignupScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Signup'>;
 
 export default function SignupScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<SignupScreenNavigationProp>();
 
   return (
     <View style={styles.container}>

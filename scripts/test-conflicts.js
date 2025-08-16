@@ -102,8 +102,17 @@ class ConflictSimulator {
       const backupPath = filePath + this.backupSuffix;
       
       if (fs.existsSync(filePath)) {
-        fs.copyFileSync(filePath, backupPath);
-        console.log(`✅ Backed up ${fileName} to ${fileName}${this.backupSuffix}`);
+        // If backup already exists, add timestamp to avoid overwriting
+        let finalBackupPath = backupPath;
+        if (fs.existsSync(backupPath)) {
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          finalBackupPath = filePath + `.backup-${timestamp}`;
+        }
+        
+        fs.copyFileSync(filePath, finalBackupPath);
+        console.log(`✅ Backed up ${fileName} to ${path.basename(finalBackupPath)}`);
+      } else {
+        console.log(`⚠️  ${fileName} does not exist, skipping backup`);
       }
     }
   }

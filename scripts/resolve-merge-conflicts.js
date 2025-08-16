@@ -208,9 +208,12 @@ class MergeConflictResolver {
       lines.push(`    "${name}": "${version}",`);
     }
     
-    // Remove trailing comma from last line
+    // Remove trailing comma from last line if there are lines
     if (lines.length > 0) {
-      lines[lines.length - 1] = lines[lines.length - 1].replace(/,$/, '');
+      const lastLine = lines[lines.length - 1];
+      if (lastLine.endsWith(',')) {
+        lines[lines.length - 1] = lastLine.slice(0, -1);
+      }
     }
     
     return lines;
@@ -234,16 +237,27 @@ class MergeConflictResolver {
    * Simple version comparison (newer version wins)
    */
   isNewerVersion(version1, version2) {
-    // Simple heuristic: prefer version with higher numbers
-    const v1 = version1.replace(/[^0-9.]/g, '');
-    const v2 = version2.replace(/[^0-9.]/g, '');
+    // Handle common prefixes and suffixes
+    const normalize = (v) => {
+      return v.replace(/^[\^~]/, '').replace(/-alpha|-beta|-rc.*$/, '');
+    };
+    
+    const v1 = normalize(version1);
+    const v2 = normalize(version2);
     
     const parts1 = v1.split('.').map(Number);
     const parts2 = v2.split('.').map(Number);
     
+    // Compare each version part
     for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
       const p1 = parts1[i] || 0;
       const p2 = parts2[i] || 0;
+      
+      if (isNaN(p1) || isNaN(p2)) {
+        // If we can't parse numbers, fall back to string comparison
+        return version1.localeCompare(version2) > 0;
+      }
+      
       if (p1 > p2) return true;
       if (p1 < p2) return false;
     }
@@ -290,6 +304,10 @@ class MergeConflictResolver {
     
     for (const [key, value] of Object.entries(base)) {
       if (key === 'dependencies' || key === 'devDependencies') {
+        // Ensure the key exists in merged before spreading
+        if (!merged[key] || typeof merged[key] !== 'object') {
+          merged[key] = {};
+        }
         merged[key] = { ...value, ...merged[key] };
       } else if (!merged.hasOwnProperty(key)) {
         merged[key] = value;
@@ -340,6 +358,31 @@ class MergeConflictResolver {
       }
     } catch (error) {
       console.log(`❌ package.json: Invalid JSON - ${error.message}`);
+      allValid = false;
+    }
+    
+    // Validate package-lock.json if it exists
+    try {
+      const lockPath = path.join(this.projectRoot, 'package-lock.json');
+      if (fs.existsSync(lockPath)) {
+        const content = fs.readFileSync(lockPath, 'utf8');
+        JSON.parse(content);
+        console.log('✅ package-lock.json: Valid JSON');
+      }
+    } catch (error) {
+      console.log(`❌ package-lock.json: Invalid JSON - ${error.message}`);
+      allValid = false;
+    }
+    
+    // Note: yarn.lock is not JSON, so we just check if it's readable
+    try {
+      const yarnPath = path.join(this.projectRoot, 'yarn.lock');
+      if (fs.existsSync(yarnPath)) {
+        fs.readFileSync(yarnPath, 'utf8');
+        console.log('✅ yarn.lock: Readable');
+      }
+    } catch (error) {
+      console.log(`❌ yarn.lock: Not readable - ${error.message}`);
       allValid = false;
     }
     
