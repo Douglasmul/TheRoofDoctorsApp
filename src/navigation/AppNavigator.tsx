@@ -2,7 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
-// Import all screens
+// Import all screens from src/screens directory
 import HomeScreen from '../screens/HomeScreen';
 import OpenAppScreen from '../screens/OpenApp';
 import MeasureRoofScreen from '../screens/MeasureRoofScreen';
@@ -16,6 +16,7 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Home">
+        {/* Main App Screens */}
         <Stack.Screen 
           name="Home" 
           component={HomeScreen} 
@@ -26,6 +27,8 @@ export default function AppNavigator() {
           component={OpenAppScreen} 
           options={{ title: 'Welcome' }}
         />
+        
+        {/* Core Functionality Screens */}
         <Stack.Screen 
           name="MeasureRoof" 
           component={MeasureRoofScreen} 
@@ -36,6 +39,8 @@ export default function AppNavigator() {
           component={QuoteScreen} 
           options={{ title: 'Get a Quote' }}
         />
+        
+        {/* Authentication Screens */}
         <Stack.Screen 
           name="Signup" 
           component={SignupScreen} 
