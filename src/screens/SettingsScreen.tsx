@@ -231,7 +231,7 @@ const SettingsOption: React.FC<SettingsOptionProps> = ({
       options.map(option => ({
         text: option,
         onPress: () => onSelect(option),
-        style: option === selectedOption ? 'destructive' : 'default',
+        style: 'default',
       })).concat([{ text: 'Cancel', style: 'cancel' }])
     );
   }, [title, options, selectedOption, onSelect]);
