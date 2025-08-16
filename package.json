@@ -4,11 +4,16 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "resolve-conflicts": "node scripts/resolve-merge-conflicts.js",
+    "test-conflicts": "node scripts/test-conflicts.js",
+    "restore-conflicts": "node scripts/test-conflicts.js --restore"
   },
   "devDependencies": {
     "@react-native-community/cli": "latest",
+    "@types/jest": "^30.0.0",
     "@types/react-native": "^0.72.8",
+    "jest": "^30.0.5",
     "typescript": "~5.8.3"
   },
   "dependencies": {
