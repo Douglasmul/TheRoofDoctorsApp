@@ -533,7 +533,7 @@ export default function SettingsScreen() {
       {/* Version info */}
       <View style={styles.versionInfo}>
         <Text style={styles.versionText}>Version 1.0.0 (Build 1)</Text>
-        <Text style={styles.versionText}>© 2024 The Roof Doctors</Text>
+        <Text style={styles.versionText}>© 2025 The Roof Doctors</Text>
       </View>
     </ScrollView>
   );
