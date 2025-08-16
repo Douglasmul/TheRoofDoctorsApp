@@ -3,3 +3,7 @@ node_modules/
 .expo-shared/
 .DS_Store
 .env
+
+# Merge conflict resolution backups
+*.backup-*
+*.original-backup
