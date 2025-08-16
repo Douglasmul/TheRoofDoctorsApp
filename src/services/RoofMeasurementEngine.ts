@@ -516,7 +516,7 @@ export class RoofMeasurementEngine {
    */
   async exportMeasurement(
     measurement: RoofMeasurement,
-    format: 'json' | 'csv' | 'pdf'
+    format: 'json' | 'csv' | 'pdf' | 'image' | 'cad'
   ): Promise<string> {
     switch (format) {
       case 'json':
@@ -528,6 +528,14 @@ export class RoofMeasurementEngine {
       case 'pdf':
         // TODO: Generate PDF report
         return 'PDF export not implemented yet';
+      
+      case 'image':
+        // TODO: Generate image report
+        return 'Image export not implemented yet';
+      
+      case 'cad':
+        // TODO: Generate CAD export
+        return 'CAD export not implemented yet';
       
       default:
         throw new Error(`Unsupported export format: ${format}`);

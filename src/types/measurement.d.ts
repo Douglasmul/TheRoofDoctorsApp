@@ -50,8 +50,36 @@ export interface RoofPlane {
 }
 
 /**
- * Complete roof measurement session
+ * Material calculation results
  */
+export interface MaterialCalculation {
+  /** Base area without waste factor */
+  baseArea: number;
+  /** Area with waste factor applied */
+  adjustedArea: number;
+  /** Estimated material units needed */
+  materialUnits: number;
+  /** Material type specific calculations */
+  materialSpecific: {
+    /** Number of shingle bundles */
+    shingleBundles?: number;
+    /** Square footage of metal sheets */
+    metalSheets?: number;
+    /** Number of tiles */
+    tiles?: number;
+  };
+  /** Cost estimation if pricing data available */
+  costEstimate?: {
+    /** Material cost */
+    materialCost: number;
+    /** Labor cost */
+    laborCost: number;
+    /** Total estimated cost */
+    totalCost: number;
+    /** Currency code */
+    currency: string;
+  };
+}
 export interface RoofMeasurement {
   /** Unique measurement session ID */
   id: string;

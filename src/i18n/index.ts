@@ -15,8 +15,8 @@ import { es } from './es';
 /**
  * Language detection plugin for React Native
  */
-const languageDetector = {
-  type: 'languageDetector',
+const languageDetector: any = {
+  type: 'languageDetector' as const,
   async: true,
   detect: async (callback: (lng: string) => void) => {
     try {
@@ -282,7 +282,7 @@ export class I18nManager {
    * Get voice guidance text with SSML markup
    */
   static getVoiceGuidance(key: string, options?: any): string {
-    const text = i18n.t(key, options);
+    const text = i18n.t(key, options) as string;
     
     // Add SSML markup for better pronunciation
     let ssmlText = text;

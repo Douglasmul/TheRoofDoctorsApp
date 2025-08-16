@@ -87,10 +87,10 @@ interface MaterialDisplay {
  * 
  * @returns JSX.Element - Measurement review interface
  */
-export default function MeasurementReviewScreen(): JSX.Element {
+export default function MeasurementReviewScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const measurement = route.params?.measurement as RoofMeasurement;
+  const measurement = (route.params as any)?.measurement as RoofMeasurement;
 
   // State management
   const [loading, setLoading] = useState(false);

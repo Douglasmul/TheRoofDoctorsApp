@@ -1,29 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
-import { Camera } from 'expo-camera';
-import { useNavigation } from '@react-navigation/native';
-
-import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Camera } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation } from '@react-navigation/native';
 
 export default function MeasureRoofScreen() {
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const navigation = useNavigation();
-
-  useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
-  }, []);
 
   const startARMeasurement = () => {
     navigation.navigate('RoofARCamera');
   };
 
-  if (hasPermission === null) {
+  if (!permission) {
     return (
       <View style={styles.container}>
         <Text style={styles.statusText}>Requesting camera permission...</Text>
@@ -31,12 +19,15 @@ export default function MeasureRoofScreen() {
     );
   }
   
-  if (hasPermission === false) {
+  if (!permission.granted) {
     return (
       <View style={styles.container}>
         <Text style={styles.statusText}>No access to camera. Please enable permissions in settings.</Text>
         <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()}>
           <Text style={styles.buttonText}>Go Back</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={requestPermission}>
+          <Text style={styles.buttonText}>Request Permission</Text>
         </TouchableOpacity>
       </View>
     );

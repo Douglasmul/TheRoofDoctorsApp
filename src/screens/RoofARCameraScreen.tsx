@@ -16,8 +16,7 @@ import {
   AccessibilityInfo,
   Platform,
 } from 'react-native';
-import { Camera, CameraType } from 'expo-camera';
-import { GLView } from 'expo-gl';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useARPlaneDetection } from '../hooks/useARPlaneDetection';
 import { usePitchSensor } from '../hooks/usePitchSensor';
@@ -83,16 +82,15 @@ const DEFAULT_CONFIG: ARCameraConfig = {
  * 
  * @returns JSX.Element - AR camera interface
  */
-export default function RoofARCameraScreen(): JSX.Element {
+export default function RoofARCameraScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const [config] = useState<ARCameraConfig>(DEFAULT_CONFIG);
   
   // Camera and permissions
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
-  const cameraRef = useRef<Camera>(null);
-  const glViewRef = useRef<GLView>(null);
+  const cameraRef = useRef<CameraView>(null);
   
   // Measurement state
   const [session, setSession] = useState<MeasurementSession>({
@@ -142,10 +140,8 @@ export default function RoofARCameraScreen(): JSX.Element {
    */
   const requestPermissions = useCallback(async () => {
     try {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-      
-      if (status !== 'granted') {
+      const result = await requestPermission();
+      if (!result?.granted) {
         Alert.alert(
           'Camera Permission Required',
           'This app needs camera access to measure roofs using AR technology.',
@@ -157,9 +153,8 @@ export default function RoofARCameraScreen(): JSX.Element {
       }
     } catch (error) {
       console.error('Error requesting camera permissions:', error);
-      setHasPermission(false);
     }
-  }, []);
+  }, [requestPermission]);
 
   /**
    * Initialize AR session
@@ -363,8 +358,10 @@ export default function RoofARCameraScreen(): JSX.Element {
 
   // Request permissions on mount
   useEffect(() => {
-    requestPermissions();
-  }, [requestPermissions]);
+    if (!permission?.granted) {
+      requestPermissions();
+    }
+  }, [permission, requestPermissions]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -375,7 +372,7 @@ export default function RoofARCameraScreen(): JSX.Element {
   }, [arPlaneDetection, pitchSensor]);
 
   // Permission states
-  if (hasPermission === null) {
+  if (!permission) {
     return (
       <View style={styles.container}>
         <Text style={styles.statusText}>Requesting camera permission...</Text>
@@ -383,11 +380,11 @@ export default function RoofARCameraScreen(): JSX.Element {
     );
   }
 
-  if (hasPermission === false) {
+  if (!permission.granted) {
     return (
       <View style={styles.container}>
         <Text style={styles.statusText}>No access to camera</Text>
-        <TouchableOpacity style={styles.button} onPress={requestPermissions}>
+        <TouchableOpacity style={styles.button} onPress={requestPermission}>
           <Text style={styles.buttonText}>Request Permission</Text>
         </TouchableOpacity>
       </View>
@@ -398,10 +395,10 @@ export default function RoofARCameraScreen(): JSX.Element {
     <View style={styles.container}>
       {/* AR Camera View */}
       <View style={styles.cameraContainer}>
-        <Camera
+        <CameraView
           ref={cameraRef}
           style={styles.camera}
-          type={CameraType.back}
+          facing="back"
           onCameraReady={onCameraReady}
           onTouchEnd={onScreenTap}
         />

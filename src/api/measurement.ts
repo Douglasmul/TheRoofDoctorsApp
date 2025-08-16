@@ -175,7 +175,7 @@ export function useMeasurementAPI(config: Partial<APIConfig> = {}) {
       const refreshToken = await SecureStore.getItemAsync('refresh_token');
       if (!refreshToken) return null;
 
-      const response = await apiRequest('/auth/refresh', {
+      const response = await apiRequest<{ accessToken: string; refreshToken: string }>('/auth/refresh', {
         method: 'POST',
         body: { refreshToken },
       });
@@ -329,9 +329,12 @@ export function useMeasurementAPI(config: Partial<APIConfig> = {}) {
       if (!isOnline && mergedConfig.offlineMode) {
         await queueOfflineOperation({
           type: method === 'GET' ? 'sync' : 'create',
-          endpoint,
-          method,
-          body,
+          data: {
+            endpoint,
+            method,
+            body,
+          },
+          priority: 'medium',
         });
       }
 
@@ -607,10 +610,15 @@ export function useMeasurementAPI(config: Partial<APIConfig> = {}) {
    */
   const checkConnectivity = useCallback(async () => {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
       const response = await fetch(`${mergedConfig.baseUrl}/health`, {
         method: 'HEAD',
-        timeout: 5000,
+        signal: controller.signal,
       });
+      
+      clearTimeout(timeoutId);
       setIsOnline(response.ok);
       return response.ok;
     } catch (error) {
