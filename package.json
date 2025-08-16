@@ -4,7 +4,10 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "resolve-conflicts": "node scripts/resolve-merge-conflicts.js",
+    "test-conflicts": "node scripts/test-conflicts.js",
+    "restore-conflicts": "node scripts/test-conflicts.js --restore"
   },
   "devDependencies": {
     "@react-native-community/cli": "latest",
