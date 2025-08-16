@@ -73,7 +73,6 @@ const DEMO_USER_PROFILE: UserProfile = {
   company: 'Elite Roofing Solutions',
   role: 'Senior Roof Inspector',
   joinedDate: '2023-01-15',
-  joinedDate: joinedDate,
   lastActive: lastActive,
   completedProjects: 45,
   totalRevenue: 125000,
