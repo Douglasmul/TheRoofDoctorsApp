@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Button } from 'react-native';
 import { Camera } from 'expo-camera';
+import { useNavigation } from '@react-navigation/native';
 
 export default function MeasureRoofScreen() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [cameraRef, setCameraRef] = useState<any>(null);
+  const navigation = useNavigation();
 
   useEffect(() => {
     (async () => {
@@ -24,6 +26,7 @@ export default function MeasureRoofScreen() {
     return (
       <View style={styles.container}>
         <Text>No access to camera. Please enable permissions in settings.</Text>
+        <Button title="Go Back" onPress={() => navigation.goBack()} />
       </View>
     );
   }
@@ -38,7 +41,7 @@ export default function MeasureRoofScreen() {
           ref={ref => setCameraRef(ref)}
         />
       </View>
-      <Button title="Go Back" onPress={() => {}} />
+      <Button title="Go Back" onPress={() => navigation.goBack()} />
     </View>
   );
 }
