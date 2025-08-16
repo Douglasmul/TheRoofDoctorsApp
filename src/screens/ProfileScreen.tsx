@@ -73,7 +73,7 @@ const DEMO_USER_PROFILE: UserProfile = {
   company: 'Elite Roofing Solutions',
   role: 'Senior Roof Inspector',
   joinedDate: '2023-01-15',
-  lastActive: lastActive,
+  lastActive: '2024-01-15T10:00:00Z',
   completedProjects: 45,
   totalRevenue: 125000,
   certifications: ['NRCA Certified', 'OSHA 30-Hour', 'Drone Pilot License'],
