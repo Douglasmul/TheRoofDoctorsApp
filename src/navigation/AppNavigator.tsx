@@ -6,6 +6,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import HomeScreen from '../screens/HomeScreen';
 import OpenAppScreen from '../screens/OpenApp';
 import MeasureRoofScreen from '../screens/MeasureRoofScreen';
+import RoofARCameraScreen from '../screens/RoofARCameraScreen';
+import MeasurementReviewScreen from '../screens/MeasurementReviewScreen';
 import SignupScreen from '../screens/SignupScreen';
 import LoginScreen from '../screens/LoginScreen';
 import QuoteScreen from '../screens/QuoteScreen';
@@ -33,6 +35,19 @@ export default function AppNavigator() {
           name="MeasureRoof" 
           component={MeasureRoofScreen} 
           options={{ title: 'Measure Roof' }}
+        />
+        <Stack.Screen 
+          name="RoofARCamera" 
+          component={RoofARCameraScreen} 
+          options={{ 
+            title: 'AR Measurement',
+            headerShown: false, // Hide header for immersive AR experience
+          }}
+        />
+        <Stack.Screen 
+          name="MeasurementReview" 
+          component={MeasurementReviewScreen} 
+          options={{ title: 'Measurement Review' }}
         />
         <Stack.Screen 
           name="Quote" 
