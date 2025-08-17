@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
   },
   headerActions: {
     flexDirection: 'row',
-    gap: 12,
+    // Use marginLeft on child elements for spacing instead of gap
   },
   headerButton: {
     flex: 1,
