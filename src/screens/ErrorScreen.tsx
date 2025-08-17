@@ -760,7 +760,8 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     // Spacing between child elements is implemented via marginLeft on headerButton.
-    // For best results, set marginLeft: 0 for the first child in render logic.
+    // Spacing between child elements should be implemented via marginLeft on headerButton in render logic.
+    // For best results, set marginLeft: 0 for the first child and marginLeft: 8 for subsequent children.
   },
   headerButton: {
     flex: 1,
