@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    // gap: 16, // Removed unsupported property
   },
   metricContainer: {
     flex: 1,
