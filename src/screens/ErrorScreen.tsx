@@ -31,7 +31,6 @@ import {
   Alert,
   Dimensions,
   Platform,
-  DeviceInfo,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { theme } from '../theme/theme';
