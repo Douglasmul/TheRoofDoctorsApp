@@ -904,7 +904,7 @@ const styles = StyleSheet.create({
   },
   errorActions: {
     flexDirection: 'row',
-    gap: 12,
+    // gap: 12, // Removed unsupported property
   },
   actionButton: {
     flex: 1,
