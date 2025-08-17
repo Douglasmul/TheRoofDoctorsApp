@@ -58,6 +58,93 @@ interface MeasurementSession {
 }
 
 /**
+ * Quality Indicator Component
+ */
+interface QualityIndicatorProps {
+  label: string;
+  status: string;
+  score: number;
+}
+
+const QualityIndicator: React.FC<QualityIndicatorProps> = ({ label, status, score }) => {
+  const getStatusColor = (status: string, score: number) => {
+    if (status === 'normal' || status === 'good' || score > 75) return '#4CAF50';
+    if (status === 'limited' || status === 'poor' || score > 50) return '#FF9800';
+    return '#F44336';
+  };
+
+  return (
+    <View style={styles.qualityIndicatorContainer}>
+      <View style={[
+        styles.qualityDot,
+        { backgroundColor: getStatusColor(status, score) }
+      ]} />
+      <Text style={styles.qualityText}>{label}</Text>
+      <Text style={styles.qualityScore}>{score}%</Text>
+    </View>
+  );
+};
+
+/**
+ * Plane Visualization Component
+ */
+interface PlaneVisualizationProps {
+  plane: RoofPlane;
+  index: number;
+  units: string;
+  onPlaneSelect: () => void;
+}
+
+const PlaneVisualization: React.FC<PlaneVisualizationProps> = ({ 
+  plane, 
+  index, 
+  units, 
+  onPlaneSelect 
+}) => {
+  const getPlaneTypeColor = (type: RoofPlane['type']) => {
+    const colors = {
+      primary: '#4CAF50',
+      secondary: '#2196F3',
+      dormer: '#FF9800',
+      chimney: '#9C27B0',
+      other: '#607D8B',
+    };
+    return colors[type] || colors.other;
+  };
+
+  return (
+    <TouchableOpacity 
+      style={[
+        styles.planeOverlay,
+        { 
+          backgroundColor: `${getPlaneTypeColor(plane.type)}CC`,
+          top: 200 + index * 60,
+          borderLeftColor: getPlaneTypeColor(plane.type),
+        }
+      ]}
+      onPress={onPlaneSelect}
+      accessibilityLabel={`${plane.type} surface ${index + 1}`}
+      accessibilityHint={`Area: ${plane.area.toFixed(2)} ${units === 'metric' ? 'square meters' : 'square feet'}`}
+    >
+      <Text style={styles.planeInfo}>
+        {plane.type.charAt(0).toUpperCase() + plane.type.slice(1)} #{index + 1}
+      </Text>
+      <Text style={styles.planeDetails}>
+        {plane.area.toFixed(2)} {units === 'metric' ? 'm²' : 'ft²'}
+      </Text>
+      <Text style={styles.planeDetails}>
+        Pitch: {plane.pitchAngle.toFixed(1)}°
+      </Text>
+      {plane.material && plane.material !== 'unknown' && (
+        <Text style={styles.planeDetails}>
+          {plane.material}
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
+};
+
+/**
  * Default AR camera configuration
  */
 const DEFAULT_CONFIG: ARCameraConfig = {
@@ -130,11 +217,6 @@ export default function RoofARCameraScreen() {
     geometryValidation: true,
   }));
 
-  // UI state
-  const [showInstructions, setShowInstructions] = useState(true);
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [capturedPlanes, setCapturedPlanes] = useState<RoofPlane[]>([]);
-
   /**
    * Announce message to accessibility users
    * Stable callback with no dependencies - defined early to avoid declaration order issues
@@ -143,8 +225,127 @@ export default function RoofARCameraScreen() {
     if (Platform.OS === 'ios') {
       AccessibilityInfo.announceForAccessibility(message);
     }
-    // TODO: Add TTS for Android
+    // TODO: Add TTS for Android using expo-speech
   }, []);
+
+  // UI state
+  const [showInstructions, setShowInstructions] = useState(true);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [capturedPlanes, setCapturedPlanes] = useState<RoofPlane[]>([]);
+  const [cameraReady, setCameraReady] = useState(false);
+
+  /**
+   * Get step-by-step instructions based on current state
+   */
+  const getStepInstruction = useCallback((state: string, planeCount: number): string => {
+    switch (state) {
+      case 'initializing':
+        return 'Initializing AR system... Please wait';
+      case 'detecting':
+        return 'Point camera at roof surface to detect planes';
+      case 'measuring':
+        if (planeCount === 0) {
+          return 'Move closer to roof surface and tap to mark first corner';
+        } else if (planeCount < 3) {
+          return `${planeCount} surface(s) detected. Continue mapping the roof`;
+        } else {
+          return 'Good progress! Continue or tap Complete when finished';
+        }
+      case 'complete':
+        return 'Measurement complete! Review your results';
+      default:
+        return 'Point camera at roof and follow on-screen guidance';
+    }
+  }, []);
+
+  /**
+   * Get status text with better formatting
+   */
+  const getStatusText = useCallback((state: string): string => {
+    const statusMap = {
+      'initializing': 'Starting Up',
+      'detecting': 'Scanning',
+      'measuring': 'Measuring',
+      'complete': 'Complete',
+    };
+    return statusMap[state as keyof typeof statusMap] || 'Ready';
+  }, []);
+
+  /**
+   * Get status color based on state
+   */
+  const getStatusColor = useCallback((state: string) => {
+    const colorMap = {
+      'initializing': { color: '#FF9800' },
+      'detecting': { color: '#2196F3' },
+      'measuring': { color: '#4CAF50' },
+      'complete': { color: '#8BC34A' },
+    };
+    return colorMap[state as keyof typeof colorMap] || { color: '#9E9E9E' };
+  }, []);
+
+  /**
+   * Calculate measurement progress
+   */
+  const getProgress = useCallback((): number => {
+    const baseProgress = {
+      'initializing': 10,
+      'detecting': 25,
+      'measuring': 50,
+      'complete': 100,
+    };
+    
+    const stateProgress = baseProgress[session.state as keyof typeof baseProgress] || 0;
+    const planeProgress = Math.min(40, capturedPlanes.length * 10);
+    
+    return Math.min(100, stateProgress + planeProgress);
+  }, [session.state, capturedPlanes.length]);
+
+  /**
+   * Get accuracy color based on level
+   */
+  const getAccuracyColor = useCallback((accuracy: string) => {
+    const colorMap = {
+      'high': { color: '#4CAF50' },
+      'medium': { color: '#FF9800' },
+      'low': { color: '#F44336' },
+    };
+    return colorMap[accuracy as keyof typeof colorMap] || { color: '#9E9E9E' };
+  }, []);
+
+  /**
+   * Handle plane selection for editing
+   */
+  const handlePlaneSelect = useCallback((planeId: string) => {
+    // TODO: Implement plane editing functionality
+    console.log('Selected plane:', planeId);
+    
+    if (config.voiceGuidance) {
+      const plane = capturedPlanes.find(p => p.id === planeId);
+      if (plane) {
+        announceToAccessibility(`Selected ${plane.type} surface with area ${plane.area.toFixed(1)} square ${config.units === 'metric' ? 'meters' : 'feet'}`);
+      }
+    }
+  }, [capturedPlanes, config.voiceGuidance, config.units, announceToAccessibility]);
+
+  /**
+   * Enhanced camera ready handler with voice guidance
+   */
+  const onCameraReady = useCallback(() => {
+    setCameraReady(true);
+    console.log('Camera ready for AR measurement');
+    
+    // Initialize AR session
+    initializeARSession();
+    
+    if (config.voiceGuidance) {
+      announceToAccessibility('Camera ready. Point device at roof surface to begin measurement.');
+    }
+    
+    if (config.hapticFeedback) {
+      Vibration.vibrate(50);
+    }
+  }, [initializeARSession, config.voiceGuidance, config.hapticFeedback, announceToAccessibility]);
 
   /**
    * Request camera permissions  
@@ -413,13 +614,13 @@ export default function RoofARCameraScreen() {
           onTouchEnd={onScreenTap}
         />
         
-        {/* AR Overlay */}
+        {/* Advanced AR Overlay */}
         <View style={styles.overlay}>
-          {/* Instructions */}
+          {/* Dynamic Instructions */}
           {showInstructions && (
             <View style={styles.instructions}>
               <Text style={styles.instructionText}>
-                Point camera at roof surface and tap to mark corners
+                {getStepInstruction(session.state, capturedPlanes.length)}
               </Text>
               <TouchableOpacity 
                 style={styles.dismissButton}
@@ -431,42 +632,98 @@ export default function RoofARCameraScreen() {
             </View>
           )}
 
-          {/* Status Display */}
+          {/* Enhanced Status Display */}
           <View style={styles.statusOverlay}>
-            <Text style={styles.statusLabel}>Status: {session.state}</Text>
-            <Text style={styles.statusLabel}>Planes: {capturedPlanes.length}</Text>
-            <Text style={styles.statusLabel}>Points: {session.points.length}</Text>
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Status: </Text>
+              <Text style={[styles.statusValue, getStatusColor(session.state)]}>
+                {getStatusText(session.state)}
+              </Text>
+            </View>
             
-            {/* Pitch Display */}
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Progress: </Text>
+              <View style={styles.progressContainer}>
+                <View style={[styles.progressBar, { width: `${getProgress()}%` }]} />
+                <Text style={styles.progressText}>{getProgress()}%</Text>
+              </View>
+            </View>
+
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Surfaces: </Text>
+              <Text style={styles.statusValue}>{capturedPlanes.length}</Text>
+            </View>
+
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Points: </Text>
+              <Text style={styles.statusValue}>{session.points.length}</Text>
+            </View>
+            
+            {/* Real-time Pitch Display */}
             {pitchSensor.state.measurement && (
               <View style={styles.pitchDisplay}>
                 <Text style={styles.pitchText}>
                   Pitch: {pitchSensor.state.measurement.pitch.toFixed(1)}°
                 </Text>
-                <Text style={styles.confidenceText}>
+                <Text style={[styles.confidenceText, getAccuracyColor(pitchSensor.state.measurement.accuracy)]}>
                   Accuracy: {pitchSensor.state.measurement.accuracy}
                 </Text>
               </View>
             )}
 
-            {/* Quality Indicators */}
+            {/* Enhanced Quality Indicators */}
             <View style={styles.qualityIndicators}>
-              <View style={[
-                styles.qualityDot,
-                { backgroundColor: arPlaneDetection.state.trackingState === 'normal' ? '#4CAF50' : '#FF5722' }
-              ]} />
-              <Text style={styles.qualityText}>AR Tracking</Text>
+              <QualityIndicator 
+                label="AR Tracking"
+                status={arPlaneDetection.state.trackingState}
+                score={arPlaneDetection.state.qualityMetrics.trackingStability}
+              />
+              <QualityIndicator 
+                label="Lighting"
+                status={arPlaneDetection.state.qualityMetrics.lightingQuality > 60 ? 'good' : 'poor'}
+                score={arPlaneDetection.state.qualityMetrics.lightingQuality}
+              />
+              <QualityIndicator 
+                label="Stability"
+                status={arPlaneDetection.state.qualityMetrics.movementSmoothness > 70 ? 'good' : 'poor'}
+                score={arPlaneDetection.state.qualityMetrics.movementSmoothness}
+              />
             </View>
           </View>
 
-          {/* Plane Visualizations */}
+          {/* Real-time Plane Visualizations */}
           {capturedPlanes.map((plane, index) => (
-            <View key={plane.id} style={styles.planeOverlay}>
-              <Text style={styles.planeInfo}>
-                Plane {index + 1}: {plane.area.toFixed(2)} {config.units === 'metric' ? 'm²' : 'ft²'}
-              </Text>
-            </View>
+            <PlaneVisualization 
+              key={plane.id}
+              plane={plane}
+              index={index}
+              units={config.units}
+              onPlaneSelect={() => handlePlaneSelect(plane.id)}
+            />
           ))}
+
+          {/* Crosshair for targeting */}
+          <View style={styles.crosshair}>
+            <View style={styles.crosshairHorizontal} />
+            <View style={styles.crosshairVertical} />
+          </View>
+
+          {/* Live measurement feedback */}
+          {isCapturing && (
+            <View style={styles.captureOverlay}>
+              <Text style={styles.captureText}>Capturing...</Text>
+              <View style={styles.captureProgress}>
+                <View style={[styles.captureProgressBar, { width: '60%' }]} />
+              </View>
+            </View>
+          )}
+
+          {/* Error/Warning Messages */}
+          {arPlaneDetection.state.error && (
+            <View style={styles.errorOverlay}>
+              <Text style={styles.errorText}>{arPlaneDetection.state.error}</Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -598,9 +855,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   qualityIndicators: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    marginTop: 5,
+  },
+  qualityIndicatorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 5,
+    marginVertical: 2,
   },
   qualityDot: {
     width: 8,
@@ -611,6 +873,144 @@ const styles = StyleSheet.create({
   qualityText: {
     color: 'white',
     fontSize: 12,
+    flex: 1,
+  },
+  qualityScore: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 2,
+  },
+  statusLabel: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  statusValue: {
+    color: 'white',
+    fontSize: 12,
+  },
+  progressContainer: {
+    flex: 1,
+    height: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 8,
+    marginLeft: 8,
+    position: 'relative',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+  },
+  progressText: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    color: 'white',
+    fontSize: 10,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  planeOverlay: {
+    position: 'absolute',
+    left: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    minWidth: 150,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  planeInfo: {
+    color: '#333',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  planeDetails: {
+    color: '#666',
+    fontSize: 12,
+    marginBottom: 1,
+  },
+  crosshair: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: 40,
+    height: 40,
+    marginTop: -20,
+    marginLeft: -20,
+  },
+  crosshairHorizontal: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    marginTop: -1,
+  },
+  crosshairVertical: {
+    position: 'absolute',
+    left: '50%',
+    top: 0,
+    bottom: 0,
+    width: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    marginLeft: -1,
+  },
+  captureOverlay: {
+    position: 'absolute',
+    top: '50%',
+    left: 20,
+    right: 20,
+    marginTop: -40,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  captureText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  captureProgress: {
+    width: '100%',
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 2,
+  },
+  captureProgressBar: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: 2,
+  },
+  errorOverlay: {
+    position: 'absolute',
+    bottom: 100,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(244, 67, 54, 0.9)',
+    padding: 12,
+    borderRadius: 8,
+  },
+  errorText: {
+    color: 'white',
+    fontSize: 14,
+    textAlign: 'center',
   },
   planeOverlay: {
     position: 'absolute',

@@ -270,12 +270,16 @@ export class RoofMeasurementEngine {
   }
 
   /**
-   * Calculate material requirements
+   * Calculate material requirements with advanced algorithms
    */
   async calculateMaterials(measurement: RoofMeasurement): Promise<MaterialCalculation> {
     const baseArea = measurement.totalProjectedArea;
     const wasteMultiplier = 1 + (this.config.wasteFactorPercent / 100);
     const adjustedArea = baseArea * wasteMultiplier;
+
+    // Calculate complexity factor based on roof geometry
+    const complexityFactor = this.calculateComplexityFactor(measurement.planes);
+    const finalArea = adjustedArea * complexityFactor;
 
     // Basic material calculations (would be enhanced with real pricing data)
     const materialSpecific: MaterialCalculation['materialSpecific'] = {};
@@ -286,34 +290,124 @@ export class RoofMeasurementEngine {
     switch (dominantMaterial) {
       case 'shingle':
         // Typical shingle coverage: 33.3 sq ft per bundle
-        const sqFt = this.convertToSquareFeet(adjustedArea);
+        const sqFt = this.convertToSquareFeet(finalArea);
         materialSpecific.shingleBundles = Math.ceil(sqFt / 33.3);
         break;
       
       case 'metal':
         // Metal sheets: 36 sq ft per sheet typically
-        const metalSqFt = this.convertToSquareFeet(adjustedArea);
+        const metalSqFt = this.convertToSquareFeet(finalArea);
         materialSpecific.metalSheets = Math.ceil(metalSqFt / 36);
         break;
       
       case 'tile':
         // Clay tiles: ~1 tile per sq ft
-        const tileSqFt = this.convertToSquareFeet(adjustedArea);
+        const tileSqFt = this.convertToSquareFeet(finalArea);
         materialSpecific.tiles = Math.ceil(tileSqFt);
         break;
     }
 
+    // Calculate cost estimates (placeholder pricing)
+    const costEstimate = await this.calculateCostEstimate(finalArea, dominantMaterial);
+
     return {
-      baseArea: this.roundToPrecision(baseArea),
-      adjustedArea: this.roundToPrecision(adjustedArea),
-      materialUnits: adjustedArea, // Base unit
+      totalArea: this.roundToPrecision(finalArea),
+      wastePercent: this.config.wasteFactorPercent + (complexityFactor - 1) * 100,
+      dominantMaterial,
       materialSpecific,
-      // TODO: Add cost estimation from pricing API
+      costEstimate,
     };
   }
 
   /**
-   * Validate array of planes
+   * Calculate roof complexity factor based on geometry
+   */
+  private calculateComplexityFactor(planes: RoofPlane[]): number {
+    let complexityScore = 1.0;
+    
+    // More planes = more complex
+    if (planes.length > 4) {
+      complexityScore += (planes.length - 4) * 0.05;
+    }
+    
+    // Steep pitches increase complexity
+    const avgPitch = planes.reduce((sum, p) => sum + p.pitchAngle, 0) / planes.length;
+    if (avgPitch > 30) {
+      complexityScore += (avgPitch - 30) * 0.002;
+    }
+    
+    // Small planes (dormers, chimneys) increase complexity
+    const smallPlanes = planes.filter(p => p.area < 10).length;
+    complexityScore += smallPlanes * 0.03;
+    
+    // Different orientations increase complexity
+    const orientations = new Set(planes.map(p => Math.round(p.azimuthAngle / 45) * 45));
+    if (orientations.size > 2) {
+      complexityScore += (orientations.size - 2) * 0.02;
+    }
+    
+    return Math.min(complexityScore, 1.5); // Cap at 50% additional complexity
+  }
+
+  /**
+   * Calculate cost estimate for materials and labor
+   */
+  private async calculateCostEstimate(
+    area: number, 
+    material: RoofPlane['material']
+  ): Promise<MaterialCalculation['costEstimate']> {
+    // Placeholder pricing (in USD per sq ft)
+    const materialPrices = {
+      shingle: 3.50,
+      metal: 8.00,
+      tile: 6.50,
+      flat: 4.00,
+      unknown: 4.00,
+    };
+    
+    const laborPrices = {
+      shingle: 2.50,
+      metal: 4.00,
+      tile: 4.50,
+      flat: 3.00,
+      unknown: 3.00,
+    };
+    
+    const sqFt = this.convertToSquareFeet(area);
+    const materialCost = sqFt * (materialPrices[material || 'unknown'] || 4.00);
+    const laborCost = sqFt * (laborPrices[material || 'unknown'] || 3.00);
+    
+    return {
+      materialCost: this.roundToPrecision(materialCost),
+      laborCost: this.roundToPrecision(laborCost),
+      totalCost: this.roundToPrecision(materialCost + laborCost),
+      currency: 'USD',
+    };
+  }
+
+  /**
+   * Get dominant material type from planes
+   */
+  private getDominantMaterial(planes: RoofPlane[]): RoofPlane['material'] {
+    const materialAreas = planes.reduce((acc, plane) => {
+      const material = plane.material || 'unknown';
+      acc[material] = (acc[material] || 0) + plane.area;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return Object.entries(materialAreas)
+      .sort(([, a], [, b]) => b - a)[0]?.[0] as RoofPlane['material'] || 'unknown';
+  }
+
+  /**
+   * Convert square meters to square feet
+   */
+  private convertToSquareFeet(squareMeters: number): number {
+    return this.config.unitSystem === 'imperial' ? 
+      squareMeters * 10.764 : squareMeters;
+  }
+  /**
+   * Validate array of planes with comprehensive checks
    */
   private async validatePlanes(planes: RoofPlane[]): Promise<ValidationResult> {
     const errors: string[] = [];
@@ -322,36 +416,75 @@ export class RoofMeasurementEngine {
 
     if (planes.length === 0) {
       errors.push('No planes detected');
+      return {
+        isValid: false,
+        errors,
+        warnings,
+        qualityScore: 0,
+        recommendations: ['Ensure proper lighting and stable device movement'],
+      };
     }
+
+    let totalConfidence = 0;
+    let validGeometryCount = 0;
 
     for (const plane of planes) {
       // Validate geometry
       if (!this.isValidPlaneGeometry(plane)) {
-        errors.push(`Invalid geometry for plane ${plane.id}`);
+        errors.push(`Invalid geometry for plane ${plane.id}: insufficient boundary points or invalid shape`);
+      } else {
+        validGeometryCount++;
       }
 
       // Check confidence levels
-      if (plane.confidence < 0.5) {
-        warnings.push(`Low confidence for plane ${plane.id}: ${plane.confidence}`);
+      if (plane.confidence < 0.3) {
+        errors.push(`Critically low confidence for plane ${plane.id}: ${(plane.confidence * 100).toFixed(1)}%`);
+      } else if (plane.confidence < 0.6) {
+        warnings.push(`Low confidence for plane ${plane.id}: ${(plane.confidence * 100).toFixed(1)}%`);
       }
 
-      // Check area reasonableness
-      if (plane.area < 1) {
-        warnings.push(`Very small plane ${plane.id}: ${plane.area} sq m`);
+      totalConfidence += plane.confidence;
+
+      // Check area reasonableness for roof measurements
+      if (plane.area < 0.5) {
+        warnings.push(`Very small plane ${plane.id}: ${plane.area.toFixed(2)} sq m - may be measurement noise`);
+      } else if (plane.area > 2000) {
+        warnings.push(`Unusually large plane ${plane.id}: ${plane.area.toFixed(2)} sq m - verify accuracy`);
       }
 
-      if (plane.area > 1000) {
-        warnings.push(`Very large plane ${plane.id}: ${plane.area} sq m`);
+      // Check pitch angle reasonableness
+      if (plane.pitchAngle > 60) {
+        recommendations.push(`Steep roof detected (${plane.pitchAngle.toFixed(1)}°) - consider safety measures`);
+      } else if (plane.pitchAngle < 2) {
+        recommendations.push(`Nearly flat roof detected (${plane.pitchAngle.toFixed(1)}°) - verify drainage requirements`);
+      }
+
+      // Check boundary point density
+      if (plane.boundaries.length < 4) {
+        warnings.push(`Low boundary point density for plane ${plane.id} - may affect accuracy`);
       }
     }
 
-    // Quality score calculation
-    const confidenceScore = planes.reduce((sum, p) => sum + p.confidence, 0) / planes.length;
-    const geometryScore = planes.filter(p => this.isValidPlaneGeometry(p)).length / planes.length;
-    const qualityScore = (confidenceScore * 0.6 + geometryScore * 0.4) * 100;
+    // Overall quality metrics
+    const avgConfidence = totalConfidence / planes.length;
+    const geometryValidityRatio = validGeometryCount / planes.length;
+    const sizeConsistency = this.calculateSizeConsistency(planes);
+    
+    // Weighted quality score
+    const qualityScore = Math.round(
+      avgConfidence * 40 + 
+      geometryValidityRatio * 30 + 
+      sizeConsistency * 20 + 
+      (errors.length === 0 ? 10 : 0)
+    );
 
+    // Quality-based recommendations
     if (qualityScore < this.config.qualityThreshold) {
-      recommendations.push('Consider remeasuring for better quality');
+      recommendations.push('Consider remeasuring with better lighting and more stable movement');
+    }
+
+    if (avgConfidence < 0.7) {
+      recommendations.push('Move closer to the roof surface for better accuracy');
     }
 
     return {
@@ -364,37 +497,330 @@ export class RoofMeasurementEngine {
   }
 
   /**
-   * Validate complete measurement
+   * Calculate size consistency score across planes
+   */
+  private calculateSizeConsistency(planes: RoofPlane[]): number {
+    if (planes.length < 2) return 100;
+    
+    const areas = planes.map(p => p.area);
+    const mean = areas.reduce((sum, area) => sum + area, 0) / areas.length;
+    const variance = areas.reduce((sum, area) => sum + Math.pow(area - mean, 2), 0) / areas.length;
+    const coefficientOfVariation = Math.sqrt(variance) / mean;
+    
+    // Lower coefficient of variation = higher consistency
+    return Math.max(0, 100 - coefficientOfVariation * 50);
+  }
+
+  /**
+   * Validate complete measurement with enterprise checks
    */
   private async validateMeasurement(measurement: RoofMeasurement): Promise<ValidationResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
+    const recommendations: string[] = [];
 
+    // Basic validation
     if (measurement.totalArea <= 0) {
       errors.push('Total area must be positive');
     }
 
-    if (measurement.accuracy < 0.5) {
-      warnings.push('Low measurement accuracy');
+    if (measurement.totalProjectedArea <= 0) {
+      errors.push('Total projected area must be positive');
+    }
+
+    // Accuracy validation
+    if (measurement.accuracy < 0.3) {
+      errors.push('Measurement accuracy too low for reliable results');
+    } else if (measurement.accuracy < 0.7) {
+      warnings.push('Low measurement accuracy - results may be imprecise');
+    }
+
+    // Data consistency checks
+    if (Math.abs(measurement.totalArea - measurement.totalProjectedArea) / measurement.totalArea > 0.5) {
+      warnings.push('Large discrepancy between actual and projected areas - verify pitch calculations');
+    }
+
+    // Compliance checks
+    if (measurement.complianceStatus.status === 'failed') {
+      warnings.push('Measurement does not meet compliance standards');
+    }
+
+    // Quality metrics validation
+    if (measurement.qualityMetrics.trackingStability < 50) {
+      warnings.push('Poor tracking stability detected during measurement');
+    }
+
+    // Recommendations based on measurement characteristics
+    const avgPitch = measurement.planes.reduce((sum, p) => sum + p.pitchAngle, 0) / measurement.planes.length;
+    if (avgPitch > 45) {
+      recommendations.push('High-pitch roof detected - consider additional safety measures during installation');
+    }
+
+    const hasMultipleMaterials = new Set(measurement.planes.map(p => p.material)).size > 1;
+    if (hasMultipleMaterials) {
+      recommendations.push('Multiple roof materials detected - plan material transitions carefully');
     }
 
     return {
       isValid: errors.length === 0,
       errors,
       warnings,
-      qualityScore: measurement.accuracy * 100,
-      recommendations: [],
+      qualityScore: Math.round(measurement.accuracy * 100),
+      recommendations,
     };
   }
 
   /**
-   * Check if plane geometry is valid
+   * Check if plane geometry is valid using advanced geometric validation
    */
   private isValidPlaneGeometry(plane: RoofPlane): boolean {
     if (!this.config.geometryValidation) return true;
 
     // Check minimum boundary points
     if (plane.boundaries.length < 3) return false;
+
+    // Check for degenerate triangles (collinear points)
+    if (plane.boundaries.length === 3) {
+      return !this.arePointsCollinear(plane.boundaries[0], plane.boundaries[1], plane.boundaries[2]);
+    }
+
+    // Check for self-intersecting polygons
+    if (this.isPolygonSelfIntersecting(plane.boundaries)) return false;
+
+    // Check area reasonableness
+    if (plane.area <= 0) return false;
+
+    // Check normal vector validity
+    const normalMagnitude = Math.sqrt(
+      plane.normal.x ** 2 + plane.normal.y ** 2 + plane.normal.z ** 2
+    );
+    if (normalMagnitude < 0.9 || normalMagnitude > 1.1) return false; // Should be unit vector
+
+    return true;
+  }
+
+  /**
+   * Check if three points are collinear
+   */
+  private arePointsCollinear(p1: ARPoint, p2: ARPoint, p3: ARPoint): boolean {
+    const epsilon = 1e-6;
+    const crossProduct = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
+    return Math.abs(crossProduct) < epsilon;
+  }
+
+  /**
+   * Check if polygon is self-intersecting
+   */
+  private isPolygonSelfIntersecting(points: ARPoint[]): boolean {
+    const n = points.length;
+    if (n < 4) return false; // Triangle cannot self-intersect
+
+    // Check all pairs of non-adjacent edges
+    for (let i = 0; i < n; i++) {
+      const edge1Start = points[i];
+      const edge1End = points[(i + 1) % n];
+
+      for (let j = i + 2; j < n; j++) {
+        if (j === n - 1 && i === 0) continue; // Skip adjacent edges
+
+        const edge2Start = points[j];
+        const edge2End = points[(j + 1) % n];
+
+        if (this.doLinesIntersect(edge1Start, edge1End, edge2Start, edge2End)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Check if two line segments intersect
+   */
+  private doLinesIntersect(p1: ARPoint, q1: ARPoint, p2: ARPoint, q2: ARPoint): boolean {
+    const orientation = (p: ARPoint, q: ARPoint, r: ARPoint): number => {
+      const val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+      if (Math.abs(val) < 1e-6) return 0; // Collinear
+      return val > 0 ? 1 : 2; // Clockwise or counterclockwise
+    };
+
+    const onSegment = (p: ARPoint, q: ARPoint, r: ARPoint): boolean => {
+      return q.x <= Math.max(p.x, r.x) && q.x >= Math.min(p.x, r.x) &&
+             q.y <= Math.max(p.y, r.y) && q.y >= Math.min(p.y, r.y);
+    };
+
+    const o1 = orientation(p1, q1, p2);
+    const o2 = orientation(p1, q1, q2);
+    const o3 = orientation(p2, q2, p1);
+    const o4 = orientation(p2, q2, q1);
+
+    // General case
+    if (o1 !== o2 && o3 !== o4) return true;
+
+    // Special cases (collinear points)
+    if (o1 === 0 && onSegment(p1, p2, q1)) return true;
+    if (o2 === 0 && onSegment(p1, q2, q1)) return true;
+    if (o3 === 0 && onSegment(p2, p1, q2)) return true;
+    if (o4 === 0 && onSegment(p2, q1, q2)) return true;
+
+    return false;
+  }
+
+  /**
+   * Calculate quality metrics for the measurement session
+   */
+  private calculateQualityMetrics(planes: RoofPlane[], processingTime: number): QualityMetrics {
+    const avgConfidence = planes.reduce((sum, p) => sum + p.confidence, 0) / planes.length;
+    const totalPoints = planes.reduce((sum, p) => sum + p.boundaries.length, 0);
+    const totalArea = planes.reduce((sum, p) => sum + p.area, 0);
+    
+    return {
+      overallScore: Math.round(avgConfidence * 100),
+      trackingStability: Math.round(Math.min(100, avgConfidence * 120)), // Boost for high confidence
+      pointDensity: Math.round((totalPoints / Math.max(1, totalArea)) * 10) / 10,
+      duration: Math.round(processingTime / 1000),
+      trackingInterruptions: 0, // Would be tracked during actual AR session
+      lightingQuality: Math.round(Math.min(100, avgConfidence * 110)), // Approximate from confidence
+      movementSmoothness: Math.round(Math.min(100, 80 + avgConfidence * 20)), // Approximate
+    };
+  }
+
+  /**
+   * Generate unique measurement ID
+   */
+  private async generateMeasurementId(): Promise<string> {
+    const timestamp = Date.now().toString(36);
+    const randomPart = Math.random().toString(36).substr(2, 8);
+    return `measurement_${timestamp}_${randomPart}`;
+  }
+
+  /**
+   * Get device information for audit trail
+   */
+  private async getDeviceInfo(): Promise<any> {
+    // In a real implementation, this would use expo-device or similar
+    return {
+      platform: Platform.OS,
+      version: Platform.Version,
+      model: 'Simulated Device',
+      sensors: ['accelerometer', 'gyroscope', 'camera'],
+      arCapabilities: Platform.OS === 'ios' ? 'ARKit' : 'ARCore',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Add audit trail entry
+   */
+  private async addAuditEntry(
+    action: string, 
+    userId: string, 
+    sessionId: string, 
+    details: string
+  ): Promise<void> {
+    const entry: AuditEntry = {
+      id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`,
+      timestamp: new Date(),
+      action,
+      userId,
+      sessionId,
+      details,
+      metadata: {
+        platform: Platform.OS,
+        version: '1.0.0',
+      },
+    };
+
+    this.auditTrail.push(entry);
+  }
+
+  /**
+   * Round number to configured precision
+   */
+  private roundToPrecision(value: number): number {
+    const factor = Math.pow(10, this.config.areaPrecision);
+    return Math.round(value * factor) / factor;
+  }
+
+  /**
+   * Export measurement data in specified format
+   */
+  async exportMeasurement(measurement: RoofMeasurement, format: 'json' | 'csv' | 'pdf'): Promise<string> {
+    switch (format) {
+      case 'json':
+        return JSON.stringify(measurement, null, 2);
+      
+      case 'csv':
+        return this.exportToCSV(measurement);
+      
+      case 'pdf':
+        return this.exportToPDF(measurement);
+      
+      default:
+        throw new Error(`Unsupported export format: ${format}`);
+    }
+  }
+
+  /**
+   * Export to CSV format
+   */
+  private exportToCSV(measurement: RoofMeasurement): string {
+    const headers = ['Plane ID', 'Type', 'Material', 'Area (sq m)', 'Projected Area (sq m)', 'Pitch (°)', 'Azimuth (°)', 'Confidence'];
+    const rows = measurement.planes.map(plane => [
+      plane.id,
+      plane.type,
+      plane.material || 'unknown',
+      plane.area.toString(),
+      plane.projectedArea.toString(),
+      plane.pitchAngle.toFixed(1),
+      plane.azimuthAngle.toFixed(1),
+      (plane.confidence * 100).toFixed(1) + '%',
+    ]);
+
+    // Add summary rows
+    rows.push(['', '', '', '', '', '', '', '']);
+    rows.push(['TOTAL', '', '', measurement.totalArea.toString(), measurement.totalProjectedArea.toString(), '', '', '']);
+
+    return [headers, ...rows].map(row => row.join(',')).join('\n');
+  }
+
+  /**
+   * Export to PDF format (basic implementation)
+   */
+  private exportToPDF(measurement: RoofMeasurement): string {
+    // In a real implementation, this would generate actual PDF content
+    // For now, return a formatted text representation
+    const lines = [
+      'ROOF MEASUREMENT REPORT',
+      '========================',
+      '',
+      `Measurement ID: ${measurement.id}`,
+      `Date: ${measurement.timestamp.toISOString()}`,
+      `Total Area: ${measurement.totalArea.toFixed(2)} sq m`,
+      `Projected Area: ${measurement.totalProjectedArea.toFixed(2)} sq m`,
+      `Accuracy: ${(measurement.accuracy * 100).toFixed(1)}%`,
+      '',
+      'PLANE DETAILS:',
+      '-------------',
+    ];
+
+    measurement.planes.forEach((plane, index) => {
+      lines.push(`${index + 1}. ${plane.type.toUpperCase()} (${plane.id})`);
+      lines.push(`   Material: ${plane.material || 'unknown'}`);
+      lines.push(`   Area: ${plane.area.toFixed(2)} sq m`);
+      lines.push(`   Pitch: ${plane.pitchAngle.toFixed(1)}°`);
+      lines.push(`   Confidence: ${(plane.confidence * 100).toFixed(1)}%`);
+      lines.push('');
+    });
+
+    return lines.join('\n');
+  }
+}
+
+// Export configuration and helper types
+export { DEFAULT_CONFIG as DefaultMeasurementConfig };
+export type { MeasurementConfig, MaterialCalculation, ValidationResult };
 
     // Check for degenerate triangles/polygons
     const area = this.calculatePlaneArea(plane.boundaries);
