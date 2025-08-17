@@ -597,7 +597,6 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     flexDirection: 'row',
-    gap: 12,
   },
   actionButton: {
     flex: 1,
