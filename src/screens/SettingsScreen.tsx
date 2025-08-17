@@ -232,7 +232,15 @@ const SettingsOption: React.FC<SettingsOptionProps> = ({
         text: option,
         onPress: () => onSelect(option),
         style: 'default',
-      })).concat([{ text: 'Cancel', style: 'cancel' }])
+    const buttons: AlertButton[] = options.map((option: string): AlertButton => ({
+      text: option,
+      onPress: () => onSelect(option),
+      style: 'default',
+    })).concat([{ text: 'Cancel', style: 'cancel' }]);
+    Alert.alert(
+      title,
+      'Select an option',
+      buttons
     );
   }, [title, options, selectedOption, onSelect]);
 
