@@ -675,7 +675,6 @@ const styles = StyleSheet.create({
   quickReportsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    // gap: 12, // Removed unsupported property
   },
   quickReport: {
     flex: 1,
