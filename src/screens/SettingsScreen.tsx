@@ -231,7 +231,6 @@ const SettingsOption: React.FC<SettingsOptionProps> = ({
       options.map(option => ({
         text: option,
         onPress: () => onSelect(option),
-        style: 'default',
     const buttons: AlertButton[] = options.map((option: string): AlertButton => ({
       text: option,
       onPress: () => onSelect(option),
