@@ -759,7 +759,8 @@ const styles = StyleSheet.create({
   },
   headerActions: {
     flexDirection: 'row',
-    // Use marginLeft on child elements for spacing instead of gap
+    // Spacing between child elements is implemented via marginLeft on headerButton.
+    // For best results, set marginLeft: 0 for the first child in render logic.
   },
   headerButton: {
     flex: 1,
