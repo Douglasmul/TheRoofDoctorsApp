@@ -746,7 +746,8 @@ const styles = StyleSheet.create({
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    paddingRight: 12,
+    paddingBottom: 12,
   },
   quickAction: {
     flex: 1,
