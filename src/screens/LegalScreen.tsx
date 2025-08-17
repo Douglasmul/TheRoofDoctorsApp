@@ -1102,7 +1102,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   legalActions: {
-    gap: 12,
+    // spacing between children handled via marginBottom on child components
   },
   actionButton: {
     flexDirection: 'row',
