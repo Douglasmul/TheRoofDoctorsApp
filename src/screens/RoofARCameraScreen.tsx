@@ -136,7 +136,19 @@ export default function RoofARCameraScreen() {
   const [capturedPlanes, setCapturedPlanes] = useState<RoofPlane[]>([]);
 
   /**
-   * Request camera permissions
+   * Announce message to accessibility users
+   * Stable callback with no dependencies - defined early to avoid declaration order issues
+   */
+  const announceToAccessibility = useCallback((message: string) => {
+    if (Platform.OS === 'ios') {
+      AccessibilityInfo.announceForAccessibility(message);
+    }
+    // TODO: Add TTS for Android
+  }, []);
+
+  /**
+   * Request camera permissions  
+   * Dependencies: stable requestPermission callback
    */
   const requestPermissions = useCallback(async () => {
     try {
@@ -158,6 +170,7 @@ export default function RoofARCameraScreen() {
 
   /**
    * Initialize AR session
+   * Dependencies: specific methods instead of entire hook objects to avoid instability
    */
   const initializeARSession = useCallback(async () => {
     try {
@@ -183,15 +196,30 @@ export default function RoofARCameraScreen() {
       console.error('Error initializing AR session:', error);
       Alert.alert('AR Error', 'Failed to initialize AR measurement system.');
     }
-  }, [arPlaneDetection, pitchSensor, config]);
+  }, [arPlaneDetection.startDetection, pitchSensor.startMeasuring, config.voiceGuidance, config.hapticFeedback, announceToAccessibility]);
 
   /**
    * Handle plane detection updates
+   * Dependencies: only arPlaneDetection.state.planes to avoid infinite render cycle
+   * capturedPlanes.length is not included since this effect updates capturedPlanes
    */
   useEffect(() => {
     if (arPlaneDetection.state.planes.length > 0) {
       const newPlanes = arPlaneDetection.state.planes;
-      setCapturedPlanes(newPlanes);
+      setCapturedPlanes(prevPlanes => {
+        // Voice guidance for new plane
+        if (config.voiceGuidance && newPlanes.length > prevPlanes.length) {
+          const newPlaneCount = newPlanes.length - prevPlanes.length;
+          announceToAccessibility(`${newPlaneCount} new roof surface${newPlaneCount > 1 ? 's' : ''} detected.`);
+        }
+
+        // Haptic feedback for new plane
+        if (config.hapticFeedback && newPlanes.length > prevPlanes.length) {
+          Vibration.vibrate([50, 50, 50]);
+        }
+        
+        return newPlanes;
+      });
       
       // Update session state
       setSession(prev => ({
@@ -199,22 +227,12 @@ export default function RoofARCameraScreen() {
         state: 'measuring',
         quality: arPlaneDetection.state.qualityMetrics,
       }));
-
-      // Voice guidance for new plane
-      if (config.voiceGuidance && newPlanes.length > capturedPlanes.length) {
-        const newPlaneCount = newPlanes.length - capturedPlanes.length;
-        announceToAccessibility(`${newPlaneCount} new roof surface${newPlaneCount > 1 ? 's' : ''} detected.`);
-      }
-
-      // Haptic feedback for new plane
-      if (config.hapticFeedback && newPlanes.length > capturedPlanes.length) {
-        Vibration.vibrate([50, 50, 50]);
-      }
     }
-  }, [arPlaneDetection.state.planes, capturedPlanes.length, config]);
+  }, [arPlaneDetection.state.planes, config.voiceGuidance, config.hapticFeedback, announceToAccessibility]);
 
   /**
    * Handle point capture
+   * Dependencies: stable callback references to avoid recreation on every render
    */
   const capturePoint = useCallback(async (x: number, y: number) => {
     if (!cameraReady || session.state !== 'measuring') return;
@@ -261,10 +279,11 @@ export default function RoofARCameraScreen() {
     } finally {
       setIsCapturing(false);
     }
-  }, [cameraReady, session.state, session.points.length, pitchSensor.state.measurement, config]);
+  }, [cameraReady, session.state, session.points.length, pitchSensor.state.measurement, config.voiceGuidance, config.hapticFeedback, announceToAccessibility]);
 
   /**
    * Complete measurement session
+   * Dependencies: specific values and stable methods instead of unstable objects
    */
   const completeMeasurement = useCallback(async () => {
     if (capturedPlanes.length === 0) {
@@ -298,10 +317,11 @@ export default function RoofARCameraScreen() {
       console.error('Error completing measurement:', error);
       Alert.alert('Calculation Error', 'Failed to calculate roof measurements.');
     }
-  }, [capturedPlanes, session.id, arPlaneDetection, pitchSensor, navigation, config]);
+  }, [capturedPlanes, session.id, arPlaneDetection.stopDetection, pitchSensor.stopMeasuring, navigation, config.voiceGuidance, announceToAccessibility]);
 
   /**
    * Reset measurement session
+   * Dependencies: specific methods instead of entire hook objects
    */
   const resetMeasurement = useCallback(() => {
     Alert.alert(
@@ -328,17 +348,7 @@ export default function RoofARCameraScreen() {
         },
       ]
     );
-  }, [arPlaneDetection, config]);
-
-  /**
-   * Announce message to accessibility users
-   */
-  const announceToAccessibility = useCallback((message: string) => {
-    if (Platform.OS === 'ios') {
-      AccessibilityInfo.announceForAccessibility(message);
-    }
-    // TODO: Add TTS for Android
-  }, []);
+  }, [arPlaneDetection.resetPlanes, config.voiceGuidance, announceToAccessibility]);
 
   /**
    * Handle camera ready
@@ -356,20 +366,20 @@ export default function RoofARCameraScreen() {
     capturePoint(locationX, locationY);
   }, [capturePoint]);
 
-  // Request permissions on mount
+  // Request permissions on mount - runs only once when permission status changes
   useEffect(() => {
     if (!permission?.granted) {
       requestPermissions();
     }
-  }, [permission, requestPermissions]);
+  }, [permission?.granted, requestPermissions]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount - using specific method references instead of entire hook objects
   useEffect(() => {
     return () => {
       arPlaneDetection.stopDetection();
       pitchSensor.stopMeasuring();
     };
-  }, [arPlaneDetection, pitchSensor]);
+  }, [arPlaneDetection.stopDetection, pitchSensor.stopMeasuring]);
 
   // Permission states
   if (!permission) {
