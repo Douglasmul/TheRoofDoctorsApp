@@ -7,3 +7,7 @@ node_modules/
 # Merge conflict resolution backups
 *.backup-*
 *.original-backup
+
+# Temporary validation scripts
+validate-dependencies.js
+verify-fixes.js
