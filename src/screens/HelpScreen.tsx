@@ -781,7 +781,7 @@ const styles = StyleSheet.create({
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    // gap: 12, // Removed: not supported in React Native
   },
   categoryCard: {
     flex: 1,
