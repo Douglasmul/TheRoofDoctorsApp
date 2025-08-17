@@ -1074,7 +1074,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginLeft: 8,
   },
-  // Spacing between children should be handled via margin on child components
+  // Placeholder for future styling of legal updates section
   legalUpdates: {
   },
   updateItem: {
