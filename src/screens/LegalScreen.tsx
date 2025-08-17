@@ -1076,7 +1076,9 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   legalUpdates: {
-    gap: 16,
+  // Spacing between children should be handled via margin on child components
+  legalUpdates: {
+    // gap: 16, // Not supported in React Native
   },
   updateItem: {
     paddingVertical: 12,
