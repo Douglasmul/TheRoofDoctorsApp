@@ -822,16 +822,6 @@ export class RoofMeasurementEngine {
 export { DEFAULT_CONFIG as DefaultMeasurementConfig };
 export type { MeasurementConfig, MaterialCalculation, ValidationResult };
 
-    // Check for degenerate triangles/polygons
-    const area = this.calculatePlaneArea(plane.boundaries);
-    if (area < 0.01) return false; // Minimum 0.01 sq m
-
-    // Check pitch angle reasonableness
-    if (plane.pitchAngle < 0 || plane.pitchAngle > 90) return false;
-
-    return true;
-  }
-
   /**
    * Calculate quality metrics for measurement session
    */
@@ -1000,9 +990,15 @@ export type { MeasurementConfig, MaterialCalculation, ValidationResult };
   }
 }
 
+// Export configuration and helper types
+export { DEFAULT_CONFIG as DefaultMeasurementConfig };
+export type { MeasurementConfig, MaterialCalculation, ValidationResult };
+
 // TODO: Implement advanced 3D geometry validation algorithms
 // TODO: Add machine learning models for material classification
 // TODO: Integrate with weather APIs for environmental factors
+// TODO: Add support for 3D model generation from roof measurements
+// TODO: Implement automatic report generation with CAD integration
 // TODO: Add support for complex roof shapes (dormers, valleys, hips)
 // TODO: Implement real-time calculation streaming for large roofs
 // TODO: Add building code compliance checking

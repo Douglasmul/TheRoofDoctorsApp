@@ -5,6 +5,24 @@ jest.mock('expo-camera', () => ({
   useCameraPermissions: () => [null, { granted: true }],
 }));
 
+jest.mock('expo-sensors', () => ({
+  DeviceMotion: {
+    isAvailableAsync: jest.fn().mockResolvedValue(true),
+    setUpdateInterval: jest.fn(),
+    addListener: jest.fn().mockReturnValue({ remove: jest.fn() }),
+  },
+}));
+
+jest.mock('expo-file-system', () => ({
+  documentDirectory: '/mock/documents/',
+  writeAsStringAsync: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('expo-sharing', () => ({
+  isAvailableAsync: jest.fn().mockResolvedValue(true),
+  shareAsync: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
     navigate: jest.fn(),
@@ -27,9 +45,13 @@ jest.mock('react-native', () => {
     },
     Platform: {
       OS: 'ios',
+      Version: '15.0',
     },
     AccessibilityInfo: {
       announceForAccessibility: jest.fn(),
+    },
+    Share: {
+      share: jest.fn().mockResolvedValue({ action: 'shared' }),
     },
   };
 });
