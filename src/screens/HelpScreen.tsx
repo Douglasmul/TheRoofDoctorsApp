@@ -782,7 +782,7 @@ const styles = StyleSheet.create({
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    // gap: 12, // Removed: not supported in React Native
+    // Spacing between grid items is handled via margin on categoryCard
   },
   categoryCard: {
     flex: 1,
