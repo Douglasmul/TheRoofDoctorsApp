@@ -943,7 +943,9 @@ const styles = StyleSheet.create({
   appInfoItem: {
     fontSize: 14,
     lineHeight: 20,
+    lineHeight: 20,
     marginBottom: 8,
+    // gap: 8, // Removed unsupported property
   },
   appInfoButton: {
     backgroundColor: theme.colors.primary,
