@@ -846,7 +846,6 @@ const styles = StyleSheet.create({
   },
   headerActions: {
     flexDirection: 'row',
-    gap: 12,
   },
   headerButton: {
     flex: 1,
