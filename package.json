@@ -4,6 +4,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
+    "start": "expo start",
     "test": "jest",
     "resolve-conflicts": "node scripts/resolve-merge-conflicts.js",
     "test-conflicts": "node scripts/test-conflicts.js",
