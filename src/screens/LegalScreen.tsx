@@ -1100,7 +1100,6 @@ const styles = StyleSheet.create({
   },
   legalActions: {
     // spacing between children handled via marginBottom on child components
-  },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
