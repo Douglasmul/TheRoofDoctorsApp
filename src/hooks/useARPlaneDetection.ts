@@ -107,6 +107,7 @@ export function useARPlaneDetection(
   const mergedConfig = { ...DEFAULT_CONFIG, ...config };
   const sessionRef = useRef<any>(null);
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const sessionStartTimeRef = useRef<number | null>(null);
   
   const [state, setState] = useState<ARPlaneDetectionState>({
     planes: [],
@@ -568,11 +569,65 @@ export function useARPlaneDetection(
   }, [state.trackingState, state.planes]);
 
   /**
+   * Generate simulated plane data for development/testing
+   * This simulates progressive plane discovery as a real AR system would
+   */
+  const generateSimulatedPlanes = useCallback(() => {
+    const currentTime = Date.now();
+    const sessionDuration = currentTime - (sessionStartTimeRef.current || currentTime);
+    
+    // Progressive plane discovery - simulate realistic AR behavior
+    const simulatedPlanes = [];
+    
+    // Main roof plane appears after 1 second
+    if (sessionDuration > 1000) {
+      simulatedPlanes.push({
+        id: 'roof_main',
+        area: 45.2,
+        confidence: 0.85,
+        distance: 8.5,
+        boundaries: [
+          { x: -3.0, y: 0.0, z: -5.0, confidence: 0.9, timestamp: new Date(), sensorAccuracy: 'high' },
+          { x: 3.0, y: 0.0, z: -5.0, confidence: 0.9, timestamp: new Date(), sensorAccuracy: 'high' },
+          { x: 3.0, y: 0.0, z: -8.0, confidence: 0.9, timestamp: new Date(), sensorAccuracy: 'high' },
+          { x: -3.0, y: 0.0, z: -8.0, confidence: 0.9, timestamp: new Date(), sensorAccuracy: 'high' },
+        ]
+      });
+    }
+    
+    // Secondary roof section appears after 3 seconds  
+    if (sessionDuration > 3000) {
+      simulatedPlanes.push({
+        id: 'roof_section_2',
+        area: 28.1,
+        confidence: 0.78,
+        distance: 10.2,
+        boundaries: [
+          { x: 3.0, y: 0.5, z: -5.0, confidence: 0.8, timestamp: new Date(), sensorAccuracy: 'high' },
+          { x: 6.0, y: 0.5, z: -5.0, confidence: 0.8, timestamp: new Date(), sensorAccuracy: 'high' },
+          { x: 6.0, y: 0.5, z: -7.5, confidence: 0.8, timestamp: new Date(), sensorAccuracy: 'high' },
+          { x: 3.0, y: 0.5, z: -7.5, confidence: 0.8, timestamp: new Date(), sensorAccuracy: 'high' },
+        ]
+      });
+    }
+    
+    // Add diagnostic logging
+    if (simulatedPlanes.length > 0) {
+      console.log(`[AR Simulation] Generated ${simulatedPlanes.length} planes after ${sessionDuration}ms`);
+    }
+    
+    return simulatedPlanes;
+  }, []);
+
+  /**
    * Start AR plane detection
    */
   const startDetection = useCallback(async () => {
     try {
       setState(prev => ({ ...prev, isDetecting: true, error: null }));
+      
+      // Record session start time for simulation
+      sessionStartTimeRef.current = Date.now();
       
       const isSupported = await checkARSupport();
       if (!isSupported) {
@@ -595,12 +650,14 @@ export function useARPlaneDetection(
       detectionIntervalRef.current = setInterval(() => {
         // TODO: Poll AR system for new planes
         // const rawPlanes = sessionRef.current?.getDetectedPlanes();
-        // const processedPlanes = processDetectedPlanes(rawPlanes || []);
         
-        // For now, simulate plane detection
+        // For now, simulate realistic plane detection with progressive discovery
+        const simulatedRawPlanes = generateSimulatedPlanes();
+        const processedPlanes = processDetectedPlanes(simulatedRawPlanes);
+        
+        // Update quality metrics and plane state
         updateQualityMetrics();
-        
-        // setState(prev => ({ ...prev, planes: processedPlanes }));
+        setState(prev => ({ ...prev, planes: processedPlanes }));
       }, 100); // 10 FPS detection
 
     } catch (error) {
@@ -611,7 +668,7 @@ export function useARPlaneDetection(
         isDetecting: false 
       }));
     }
-  }, [checkARSupport, initializeARSession, processDetectedPlanes, updateQualityMetrics]);
+  }, [checkARSupport, initializeARSession, processDetectedPlanes, updateQualityMetrics, generateSimulatedPlanes]);
 
   /**
    * Stop AR plane detection
