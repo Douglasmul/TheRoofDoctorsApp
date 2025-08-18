@@ -229,7 +229,6 @@ const SettingsOption: React.FC<SettingsOptionProps> = ({
       title,
       'Select an option',
       options.map(option => ({
-        text: option,
     const buttons = options.map((option: string) => ({
       text: option,
       onPress: () => onSelect(option),
