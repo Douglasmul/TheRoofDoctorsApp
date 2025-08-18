@@ -1013,19 +1013,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
-  planeOverlay: {
-    position: 'absolute',
-    top: 300,
-    left: 20,
-    backgroundColor: 'rgba(76, 175, 80, 0.8)',
-    padding: 8,
-    borderRadius: 6,
-  },
-  planeInfo: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
   controlPanel: {
     flexDirection: 'row',
     justifyContent: 'space-around',
