@@ -77,7 +77,6 @@ export default function HomeScreen() {
           <Text style={styles.buttonText}>Get a Quote</Text>
         </TouchableOpacity>
           <Text style={styles.buttonText}>Get a Quote</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Testing Menu Toggle */}
