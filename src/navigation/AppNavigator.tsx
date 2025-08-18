@@ -12,6 +12,14 @@ import MeasurementReviewScreen from '../screens/MeasurementReviewScreen';
 import SignupScreen from '../screens/SignupScreen';
 import LoginScreen from '../screens/LoginScreen';
 import QuoteScreen from '../screens/QuoteScreen';
+import AdminScreen from '../screens/AdminScreen';
+import ErrorScreen from '../screens/ErrorScreen';
+import HelpScreen from '../screens/HelpScreen';
+import LegalScreen from '../screens/LegalScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import ReportsScreen from '../screens/ReportsScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 const Stack = createStackNavigator();
 
@@ -66,6 +74,54 @@ export default function AppNavigator() {
           name="Login" 
           component={LoginScreen} 
           options={{ title: 'Login' }}
+        />
+
+        {/* User Account Screens */}
+        <Stack.Screen 
+          name="Profile" 
+          component={ProfileScreen} 
+          options={{ title: 'Profile' }}
+        />
+        <Stack.Screen 
+          name="Settings" 
+          component={SettingsScreen} 
+          options={{ title: 'Settings' }}
+        />
+        <Stack.Screen 
+          name="Notifications" 
+          component={NotificationsScreen} 
+          options={{ title: 'Notifications' }}
+        />
+
+        {/* Reports and Data Screens */}
+        <Stack.Screen 
+          name="Reports" 
+          component={ReportsScreen} 
+          options={{ title: 'Reports' }}
+        />
+
+        {/* Support and Information Screens */}
+        <Stack.Screen 
+          name="Help" 
+          component={HelpScreen} 
+          options={{ title: 'Help & Support' }}
+        />
+        <Stack.Screen 
+          name="Legal" 
+          component={LegalScreen} 
+          options={{ title: 'Legal Information' }}
+        />
+
+        {/* Admin and Error Screens */}
+        <Stack.Screen 
+          name="Admin" 
+          component={AdminScreen} 
+          options={{ title: 'Admin Panel' }}
+        />
+        <Stack.Screen 
+          name="Error" 
+          component={ErrorScreen} 
+          options={{ title: 'Error' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

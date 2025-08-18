@@ -464,33 +464,6 @@ export default function MeasurementReviewScreen() {
     // For now, return base64 placeholder
     return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
   }, []);
-  /**
-   * Share exported file using platform-appropriate method
-   */
-  const shareExportedFile = useCallback(async (
-    fileUri: string, 
-    fileName: string, 
-    format: string
-  ) => {
-    try {
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: getMimeType(format),
-          dialogTitle: 'Share Roof Measurement',
-          UTI: getUTI(format),
-        });
-      } else {
-        // Fallback to native share
-        await Share.share({
-          url: fileUri,
-          title: 'Roof Measurement Export',
-          message: `Roof measurement exported as ${fileName}`,
-        });
-      }
-    } catch (error) {
-      console.warn('Sharing not available, file saved locally:', error);
-    }
-  }, []);
 
   /**
    * Get MIME type for file format
@@ -518,6 +491,34 @@ export default function MeasurementReviewScreen() {
       image: 'public.png',
     };
     return utis[format as keyof typeof utis] || 'public.text';
+  }, []);
+
+  /**
+   * Share exported file using platform-appropriate method
+   */
+  const shareExportedFile = useCallback(async (
+    fileUri: string, 
+    fileName: string, 
+    format: string
+  ) => {
+    try {
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: getMimeType(format),
+          dialogTitle: 'Share Roof Measurement',
+          UTI: getUTI(format),
+        });
+      } else {
+        // Fallback to native share
+        await Share.share({
+          url: fileUri,
+          title: 'Roof Measurement Export',
+          message: `Roof measurement exported as ${fileName}`,
+        });
+      }
+    } catch (error) {
+      console.warn('Sharing not available, file saved locally:', error);
+    }
   }, []);
 
   /**
