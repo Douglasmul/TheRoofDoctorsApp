@@ -540,14 +540,6 @@ export default function MeasurementReviewScreen() {
     console.log(`Export audit: ${measurementId} ${format} ${status}`, error);
   }, []);
 
-    } catch (error) {
-      console.error('Export error:', error);
-      Alert.alert('Export Failed', 'Unable to export measurement data.');
-    } finally {
-      setLoading(false);
-    }
-  }, [measurement]);
-
   /**
    * Sync measurement to cloud
    */
