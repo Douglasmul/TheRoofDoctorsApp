@@ -5,7 +5,8 @@ import { COMPANY_INFO } from '../constants/company';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
-  const [showTestingMenu, setShowTestingMenu] = useState(false);
+  // Only show testing menu in development mode by default
+  const [showTestingMenu, setShowTestingMenu] = useState(__DEV__ || false);
 
   // Testing screens organized by category
   const testingScreens = {

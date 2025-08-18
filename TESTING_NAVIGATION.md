@@ -81,13 +81,16 @@ Home Screen (Initial)
 ## Notes for Developers
 
 ### Remove Testing Menu for Production
-To hide the testing menu in production builds, modify `HomeScreen.tsx`:
+To hide the testing menu in production builds, it's already configured to only show in development mode by default:
 
 ```typescript
-const [showTestingMenu, setShowTestingMenu] = useState(__DEV__); // Only show in development
+const [showTestingMenu, setShowTestingMenu] = useState(__DEV__ || false); // Only show in development
 ```
 
-Or remove the testing menu section entirely before production deployment.
+For complete removal in production builds:
+1. **Option 1 (Recommended):** The menu automatically hides in production builds
+2. **Option 2:** Set to `useState(false)` to completely disable
+3. **Option 3:** Remove the testing menu section entirely before production deployment
 
 ### Adding New Screens
 1. Add screen to `src/navigation/AppNavigator.tsx`
