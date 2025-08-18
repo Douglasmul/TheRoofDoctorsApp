@@ -6,7 +6,10 @@
   "scripts": {
     "test": "jest",
     "resolve-conflicts": "node scripts/resolve-merge-conflicts.js",
+    "resolve-conflicts-standalone": "node scripts/resolve-conflicts-standalone.js",
     "test-conflicts": "node scripts/test-conflicts.js",
+    "test-conflicts-safe": "node scripts/test-conflicts-safe.js",
+    "test-conflicts-demo": "node scripts/test-conflicts-safe.js --demo",
     "restore-conflicts": "node scripts/test-conflicts.js --restore"
   },
   "devDependencies": {
