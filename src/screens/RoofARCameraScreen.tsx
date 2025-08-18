@@ -374,6 +374,7 @@ export default function RoofARCameraScreen() {
    */
   const initializeARSession = useCallback(async () => {
     try {
+      console.log('[AR Camera] Initializing AR session...');
       setSession(prev => ({ ...prev, state: 'detecting' }));
       
       // Start AR plane detection
@@ -381,6 +382,8 @@ export default function RoofARCameraScreen() {
       
       // Start pitch sensor
       await pitchSensor.startMeasuring();
+      
+      console.log('[AR Camera] AR session initialized successfully, now in detecting state');
       
       // Announce to accessibility users
       if (config.voiceGuidance) {
@@ -408,6 +411,8 @@ export default function RoofARCameraScreen() {
   useEffect(() => {
     if (arPlaneDetection.state.planes.length > 0) {
       const newPlanes = arPlaneDetection.state.planes;
+      console.log(`[AR Camera] Detected ${newPlanes.length} planes, transitioning to measuring state`);
+      
       setCapturedPlanes(prevPlanes => {
         // Voice guidance for new plane
         if (config.voiceGuidance && newPlanes.length > prevPlanes.length) {
