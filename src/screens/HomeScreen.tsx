@@ -1,13 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { COMPANY_INFO } from '../constants/company';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>The Roof Doctors</Text>
+      <Text style={styles.header}>{COMPANY_INFO.name}</Text>
       <Text style={styles.subheader}>Welcome to your enterprise roofing assistant.</Text>
       <View style={styles.buttonContainer}>
         <TouchableOpacity

@@ -232,7 +232,6 @@ export default function RoofARCameraScreen() {
   const [showInstructions, setShowInstructions] = useState(true);
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedPlanes, setCapturedPlanes] = useState<RoofPlane[]>([]);
-  const [cameraReady, setCameraReady] = useState(false);
 
   /**
    * Get step-by-step instructions based on current state
@@ -360,7 +359,7 @@ export default function RoofARCameraScreen() {
           'This app needs camera access to measure roofs using AR technology.',
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => {} }, // TODO: Open settings
+            { text: 'Open Settings', style: 'default', onPress: () => {} }, // TODO: Open settings
           ]
         );
       }
@@ -395,7 +394,9 @@ export default function RoofARCameraScreen() {
 
     } catch (error) {
       console.error('Error initializing AR session:', error);
-      Alert.alert('AR Error', 'Failed to initialize AR measurement system.');
+      Alert.alert('AR Error', 'Failed to initialize AR measurement system.', [
+        { text: 'OK', style: 'default' }
+      ]);
     }
   }, [arPlaneDetection.startDetection, pitchSensor.startMeasuring, config.voiceGuidance, config.hapticFeedback, announceToAccessibility]);
 
@@ -444,7 +445,9 @@ export default function RoofARCameraScreen() {
       // Get current pitch measurement
       const currentPitch = pitchSensor.state.measurement;
       if (!currentPitch) {
-        Alert.alert('Sensor Error', 'Unable to get device orientation. Please ensure device is stable.');
+        Alert.alert('Sensor Error', 'Unable to get device orientation. Please ensure device is stable.', [
+          { text: 'OK', style: 'default' }
+        ]);
         return;
       }
 
@@ -476,7 +479,9 @@ export default function RoofARCameraScreen() {
 
     } catch (error) {
       console.error('Error capturing point:', error);
-      Alert.alert('Capture Error', 'Failed to capture measurement point.');
+      Alert.alert('Capture Error', 'Failed to capture measurement point.', [
+        { text: 'OK', style: 'default' }
+      ]);
     } finally {
       setIsCapturing(false);
     }
@@ -488,7 +493,9 @@ export default function RoofARCameraScreen() {
    */
   const completeMeasurement = useCallback(async () => {
     if (capturedPlanes.length === 0) {
-      Alert.alert('No Measurements', 'Please capture at least one roof surface before completing.');
+      Alert.alert('No Measurements', 'Please capture at least one roof surface before completing.', [
+        { text: 'OK', style: 'default' }
+      ]);
       return;
     }
 
@@ -516,7 +523,9 @@ export default function RoofARCameraScreen() {
 
     } catch (error) {
       console.error('Error completing measurement:', error);
-      Alert.alert('Calculation Error', 'Failed to calculate roof measurements.');
+      Alert.alert('Calculation Error', 'Failed to calculate roof measurements.', [
+        { text: 'OK', style: 'default' }
+      ]);
     }
   }, [capturedPlanes, session.id, arPlaneDetection.stopDetection, pitchSensor.stopMeasuring, navigation, config.voiceGuidance, announceToAccessibility]);
 
@@ -550,14 +559,6 @@ export default function RoofARCameraScreen() {
       ]
     );
   }, [arPlaneDetection.resetPlanes, config.voiceGuidance, announceToAccessibility]);
-
-  /**
-   * Handle camera ready
-   */
-  const onCameraReady = useCallback(() => {
-    setCameraReady(true);
-    initializeARSession();
-  }, [initializeARSession]);
 
   /**
    * Handle screen tap for point capture

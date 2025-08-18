@@ -24,6 +24,7 @@ import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import { RoofMeasurement, ExportRecord, MaterialCalculation } from '../types/measurement';
 import { RoofMeasurementEngine } from '../services/RoofMeasurementEngine';
+import { measurementReviewStyles as styles } from '../styles/measurementReviewStyles';
 
 /**
  * Export configuration options
@@ -114,7 +115,9 @@ export default function MeasurementReviewScreen() {
       setMaterialCalculation(materials);
     } catch (error) {
       console.error('Error calculating materials:', error);
-      Alert.alert('Calculation Error', 'Failed to calculate material requirements.');
+      Alert.alert('Calculation Error', 'Failed to calculate material requirements.', [
+        { text: 'OK', style: 'default' }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -182,12 +185,16 @@ export default function MeasurementReviewScreen() {
       // Add audit trail entry
       await addExportAuditEntry(measurement.id, config.format, 'success');
 
-      Alert.alert('Export Complete', `Measurement exported as ${config.format.toUpperCase()}`);
+      Alert.alert('Export Complete', `Measurement exported as ${config.format.toUpperCase()}`, [
+        { text: 'OK', style: 'default' }
+      ]);
 
     } catch (error) {
       console.error('Export error:', error);
       await addExportAuditEntry(measurement.id, config.format, 'failed', error.toString());
-      Alert.alert('Export Failed', 'Unable to export measurement data.');
+      Alert.alert('Export Failed', 'Unable to export measurement data.', [
+        { text: 'OK', style: 'default' }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -564,7 +571,9 @@ export default function MeasurementReviewScreen() {
         lastSync: new Date(),
       });
 
-      Alert.alert('Sync Complete', 'Measurement has been backed up to the cloud.');
+      Alert.alert('Sync Complete', 'Measurement has been backed up to the cloud.', [
+        { text: 'OK', style: 'default' }
+      ]);
 
     } catch (error) {
       console.error('Sync error:', error);
@@ -573,7 +582,9 @@ export default function MeasurementReviewScreen() {
         progress: 0,
         error: 'Failed to sync to cloud',
       });
-      Alert.alert('Sync Failed', 'Unable to sync measurement to cloud.');
+      Alert.alert('Sync Failed', 'Unable to sync measurement to cloud.', [
+        { text: 'OK', style: 'default' }
+      ]);
     }
   }, [measurement]);
 
@@ -610,11 +621,15 @@ export default function MeasurementReviewScreen() {
         });
       }
 
-      Alert.alert('Report Generated', 'Compliance report has been generated and can be shared.');
+      Alert.alert('Report Generated', 'Compliance report has been generated and can be shared.', [
+        { text: 'OK', style: 'default' }
+      ]);
 
     } catch (error) {
       console.error('Compliance report error:', error);
-      Alert.alert('Report Failed', 'Unable to generate compliance report.');
+      Alert.alert('Report Failed', 'Unable to generate compliance report.', [
+        { text: 'OK', style: 'default' }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -952,353 +967,6 @@ export default function MeasurementReviewScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f6f8fc',
-  },
-  scrollContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 24,
-    paddingVertical: 16,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#234e70',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 12,
-  },
-  qualityBadge: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  qualityText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  section: {
-    backgroundColor: 'white',
-    marginBottom: 16,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#234e70',
-    marginBottom: 16,
-  },
-  summaryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  summaryItem: {
-    width: '48%',
-    marginBottom: 12,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  summaryValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#234e70',
-  },
-  planeCard: {
-    backgroundColor: '#f8f9fa',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  planeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  planeTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#234e70',
-  },
-  planeType: {
-    fontSize: 14,
-    color: '#666',
-    backgroundColor: '#e9ecef',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  planeDetails: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  planeDetail: {
-    fontSize: 14,
-    color: '#666',
-    marginRight: 16,
-    marginBottom: 4,
-  },
-  materialCard: {
-    backgroundColor: '#f8f9fa',
-    padding: 16,
-    borderRadius: 8,
-  },
-  materialTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#234e70',
-    marginBottom: 4,
-  },
-  materialSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
-  },
-  materialList: {
-    // No specific styles needed
-  },
-  materialItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-  },
-  materialName: {
-    fontSize: 14,
-    color: '#234e70',
-    flex: 1,
-  },
-  materialQuantity: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#234e70',
-    marginRight: 16,
-  },
-  materialCost: {
-    fontSize: 14,
-    color: '#4CAF50',
-    fontWeight: 'bold',
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  metricItem: {
-    width: '48%',
-    marginBottom: 12,
-  },
-  metricLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  metricValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#234e70',
-  },
-  complianceCard: {
-    backgroundColor: '#f8f9fa',
-    padding: 16,
-    borderRadius: 8,
-  },
-  complianceStatus: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginBottom: 12,
-  },
-  complianceStatusText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  complianceDetails: {
-    // No specific styles needed
-  },
-  complianceLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#234e70',
-    marginBottom: 8,
-  },
-  complianceStandard: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  syncCard: {
-    backgroundColor: '#f8f9fa',
-    padding: 16,
-    borderRadius: 8,
-  },
-  syncStatus: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#234e70',
-    marginBottom: 8,
-  },
-  progressContainer: {
-    height: 8,
-    backgroundColor: '#e9ecef',
-    borderRadius: 4,
-    marginBottom: 8,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: '#2196F3',
-  },
-  syncTime: {
-    fontSize: 12,
-    color: '#666',
-  },
-  syncError: {
-    fontSize: 12,
-    color: '#F44336',
-  },
-  actionPanel: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 16,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
-  },
-  actionButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  exportButton: {
-    backgroundColor: '#2196F3',
-  },
-  syncButton: {
-    backgroundColor: '#4CAF50',
-  },
-  complianceButton: {
-    backgroundColor: '#FF9800',
-  },
-  actionButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 24,
-    width: '80%',
-    maxWidth: 300,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#234e70',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  exportOptions: {
-    marginBottom: 20,
-  },
-  exportOption: {
-    backgroundColor: '#f8f9fa',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-    alignItems: 'center',
-  },
-  exportOptionText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#234e70',
-  },
-  modalCancelButton: {
-    backgroundColor: '#6c757d',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  modalCancelText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: 'white',
-    fontSize: 16,
-    marginTop: 16,
-  },
-  errorText: {
-    color: '#F44336',
-    fontSize: 18,
-    textAlign: 'center',
-    marginTop: 100,
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: '#2196F3',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignSelf: 'center',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
 
 // TODO: Implement PDF generation with detailed diagrams and annotations
 // TODO: Add real-time collaboration features for shared reviews
