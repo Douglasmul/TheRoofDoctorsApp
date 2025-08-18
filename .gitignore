@@ -4,6 +4,9 @@ node_modules/
 .DS_Store
 .env
 
+# Prevent mixing package managers
+package-lock.json
+
 # Merge conflict resolution backups
 *.backup-*
 *.original-backup
