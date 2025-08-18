@@ -14,6 +14,14 @@ export type RootStackParamList = {
   Quote: undefined;
   Login: undefined;
   Signup: undefined;
+  Profile: undefined;
+  Settings: undefined;
+  Notifications: undefined;
+  Reports: undefined;
+  Help: undefined;
+  Legal: undefined;
+  Admin: undefined;
+  Error: undefined;
 };
 
 declare global {
