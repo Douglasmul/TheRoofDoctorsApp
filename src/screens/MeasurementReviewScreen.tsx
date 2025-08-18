@@ -636,19 +636,6 @@ export default function MeasurementReviewScreen() {
   }, [measurement]);
 
   /**
-   * Get MIME type for export format
-   */
-  const getMimeType = (format: string): string => {
-    switch (format) {
-      case 'pdf': return 'application/pdf';
-      case 'csv': return 'text/csv';
-      case 'json': return 'application/json';
-      case 'image': return 'image/png';
-      default: return 'application/octet-stream';
-    }
-  };
-
-  /**
    * Format area display based on unit system
    */
   const formatArea = (area: number): string => {
