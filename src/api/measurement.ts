@@ -8,6 +8,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
+import { COMPANY_INFO } from '../constants/company';
 import {
   RoofMeasurement,
   MeasurementResponse,
@@ -106,8 +107,8 @@ interface OfflineOperation {
  * Default API configuration
  */
 const DEFAULT_CONFIG: APIConfig = {
-  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://api.roofdoctors.com',
-  version: 'v1',
+  baseUrl: COMPANY_INFO.api.baseUrl,
+  version: COMPANY_INFO.api.version,
   timeout: 30000, // 30 seconds
   encryption: true,
   auditLogging: true,

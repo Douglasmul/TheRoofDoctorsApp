@@ -1,14 +1,15 @@
 import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { COMPANY_INFO } from '../constants/company';
 
 export default function OpenAppScreen() {
   const navigation = useNavigation();
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Welcome to The Roof Doctors App</Text>
-      <Text style={styles.subheader}>Enterprise Roof Measurement</Text>
+      <Text style={styles.header}>Welcome to {COMPANY_INFO.app.displayName} App</Text>
+      <Text style={styles.subheader}>{COMPANY_INFO.app.description}</Text>
       <Button
         title="Measure Roof with Camera"
         onPress={() => navigation.navigate('MeasureRoof')}

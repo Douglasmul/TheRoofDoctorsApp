@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { COMPANY_INFO } from '../constants/company';
 
 // Import all screens from src/screens directory
 import HomeScreen from '../screens/HomeScreen';
@@ -22,7 +23,7 @@ export default function AppNavigator() {
         <Stack.Screen 
           name="Home" 
           component={HomeScreen} 
-          options={{ title: 'The Roof Doctors' }}
+          options={{ title: COMPANY_INFO.app.displayName }}
         />
         <Stack.Screen 
           name="OpenApp" 
