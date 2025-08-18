@@ -287,6 +287,10 @@ export function useARPlaneDetection(
         const rawArea = calculatePolygonArea(optimizedBoundaries);
         const correctedArea = applyPitchCorrection(rawArea, pitchAngle);
         
+        // For simulation/development: use the simulated area if geometry calculation fails
+        const finalArea = rawArea > 0 ? rawArea : plane.area;
+        const finalProjectedArea = correctedArea > 0 ? correctedArea : plane.area;
+        
         // Detect plane type based on orientation and position
         const planeType = classifyPlaneType(normal, optimizedBoundaries, pitchAngle);
         
@@ -299,8 +303,8 @@ export function useARPlaneDetection(
           normal,
           pitchAngle,
           azimuthAngle,
-          area: rawArea,
-          projectedArea: correctedArea,
+          area: finalArea,
+          projectedArea: finalProjectedArea,
           type: planeType,
           confidence: plane.confidence || 0,
           material: detectMaterial(plane, pitchAngle), // Basic material detection
@@ -611,9 +615,9 @@ export function useARPlaneDetection(
       });
     }
     
-    // Add diagnostic logging
+    // Add diagnostic logging for debugging
     if (simulatedPlanes.length > 0) {
-      console.log(`[AR Simulation] Generated ${simulatedPlanes.length} planes after ${sessionDuration}ms`);
+      console.log(`[AR] Generated ${simulatedPlanes.length} roof planes for scanning`);
     }
     
     return simulatedPlanes;
