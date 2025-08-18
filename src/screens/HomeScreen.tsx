@@ -24,6 +24,58 @@ export default function HomeScreen() {
           <Text style={styles.buttonText}>Get a Quote</Text>
         </TouchableOpacity>
       </View>
+      
+      <Text style={styles.sectionTitle}>Enterprise Features</Text>
+      <View style={styles.enterpriseGrid}>
+        <TouchableOpacity
+          style={styles.smallButton}
+          onPress={() => navigation.navigate('Profile' as never)}
+        >
+          <Text style={styles.smallButtonText}>Profile</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.smallButton}
+          onPress={() => navigation.navigate('Settings' as never)}
+        >
+          <Text style={styles.smallButtonText}>Settings</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.smallButton}
+          onPress={() => navigation.navigate('Notifications' as never)}
+        >
+          <Text style={styles.smallButtonText}>Notifications</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.smallButton}
+          onPress={() => navigation.navigate('Admin' as never)}
+        >
+          <Text style={styles.smallButtonText}>Admin</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.smallButton}
+          onPress={() => navigation.navigate('Reports' as never)}
+        >
+          <Text style={styles.smallButtonText}>Reports</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.smallButton}
+          onPress={() => navigation.navigate('Help' as never)}
+        >
+          <Text style={styles.smallButtonText}>Help</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.smallButton}
+          onPress={() => navigation.navigate('Legal' as never)}
+        >
+          <Text style={styles.smallButtonText}>Legal</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.smallButton}
+          onPress={() => navigation.navigate('Error' as never)}
+        >
+          <Text style={styles.smallButtonText}>Error</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -65,5 +117,32 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: '600',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#234e70',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  enterpriseGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  smallButton: {
+    backgroundColor: '#e67e22',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    margin: 4,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  smallButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
