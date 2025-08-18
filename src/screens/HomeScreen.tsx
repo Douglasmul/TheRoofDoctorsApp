@@ -78,6 +78,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
           <Text style={styles.buttonText}>Get a Quote</Text>
       </View>
+      copilot/fix-f9649cf7-9103-4e2c-8e02-71b6196ecb24
 
       {/* Testing Menu Toggle */}
       <TouchableOpacity
@@ -150,6 +151,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
+copilot/fix-f9649cf7-9103-4e2c-8e02-71b6196ecb24
   
   // Testing Menu Styles
   testingToggle: {

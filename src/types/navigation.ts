@@ -19,6 +19,7 @@ export type RootStackParamList = {
   // Authentication Screens
   Login: undefined;
   Signup: undefined;
+  copilot/fix-f9649cf7-9103-4e2c-8e02-71b6196ecb24
   
   // User Account Screens
   Profile: undefined;
@@ -37,7 +38,7 @@ export type RootStackParamList = {
   Error: undefined;
 };
 
-declare global {
+  declare global {
   namespace ReactNavigation {
     interface RootParamList extends RootStackParamList {}
   }
