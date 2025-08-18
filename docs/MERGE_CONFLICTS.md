@@ -16,16 +16,28 @@ The repository includes automated tools to detect and resolve merge conflicts in
 npm run resolve-conflicts
 ```
 
-### 2. Test the Tools (Optional)
+### 2. Test the Tools (Safe Testing)
 ```bash
-# Create simulated conflicts for testing
-npm run test-conflicts
+# Create simulated conflicts in test directory (safe)
+npm run test-conflicts-safe
 
-# Run resolution on test conflicts
-npm run resolve-conflicts
+# Run resolution on test conflicts  
+npm run resolve-conflicts-standalone test-conflicts
 
-# Restore original files
-npm run restore-conflicts
+# Clean up test environment
+npm run test-conflicts-safe --cleanup
+
+# Full demonstration workflow
+npm run test-conflicts-demo
+```
+
+### 3. Emergency Resolution (When package.json is corrupted)
+```bash
+# Use standalone resolver when npm scripts don't work
+node scripts/resolve-conflicts-standalone.js
+
+# Or specify project directory
+node scripts/resolve-conflicts-standalone.js /path/to/project
 ```
 
 ## Automated Resolution
@@ -107,6 +119,10 @@ After resolving conflicts:
 - Clear node_modules: `rm -rf node_modules`
 - Fresh install: `npm install` or `yarn install`
 
+**Script won't run due to package.json conflicts:**
+- Use the standalone resolver: `node scripts/resolve-conflicts-standalone.js`
+- This works even when package.json is corrupted
+
 ### Recovery
 If something goes wrong:
 1. Restore from automatic backups (`.backup-TIMESTAMP` files)
@@ -115,18 +131,50 @@ If something goes wrong:
 
 ## File Locations
 
-- Resolution script: `scripts/resolve-merge-conflicts.js`
-- Test script: `scripts/test-conflicts.js`
-- This documentation: `docs/MERGE_CONFLICTS.md`
+- **Standard resolution script**: `scripts/resolve-merge-conflicts.js`
+- **Standalone resolution script**: `scripts/resolve-conflicts-standalone.js`
+- **Safe test script**: `scripts/test-conflicts-safe.js`
+- **Legacy test script**: `scripts/test-conflicts.js`
+- **This documentation**: `docs/MERGE_CONFLICTS.md`
+
+## Available Scripts
+
+### Primary Scripts
+- `npm run resolve-conflicts` - Standard conflict resolution (requires working package.json)
+- `npm run resolve-conflicts-standalone` - Emergency resolver (works even with corrupted package.json)
+
+### Testing Scripts
+- `npm run test-conflicts-safe` - Create safe test environment with conflicts
+- `npm run test-conflicts-demo` - Full demonstration of conflict resolution workflow
+- `npm run test-conflicts` - ⚠️ Legacy: Overwrites actual files (use with caution)
+- `npm run restore-conflicts` - Restore files after legacy testing
 
 ## Command Reference
 
 | Command | Description |
 |---------|-------------|
-| `npm run resolve-conflicts` | Detect and resolve conflicts |
-| `npm run test-conflicts` | Create test conflicts |
-| `npm run restore-conflicts` | Restore original files |
-| `node scripts/resolve-merge-conflicts.js [path]` | Run with custom project path |
+| `npm run resolve-conflicts` | Standard conflict resolution |
+| `npm run resolve-conflicts-standalone` | Emergency resolver (works with corrupted package.json) |
+| `npm run test-conflicts-safe` | Create safe test environment |
+| `npm run test-conflicts-demo` | Full workflow demonstration |
+| `npm run test-conflicts` | ⚠️ Legacy: Overwrites actual files |
+| `npm run restore-conflicts` | Restore after legacy testing |
+| `node scripts/resolve-conflicts-standalone.js [path]` | Direct standalone resolver |
+
+## Recent Improvements
+
+### Enhanced Conflict Resolution
+- **Standalone resolver** that works even when package.json is corrupted
+- **Safe testing environment** that doesn't overwrite actual files
+- **Intelligent dependency merging** that prefers newer versions
+- **Comprehensive backup system** with timestamps
+
+### Dependency Management
+- **Fixed React version conflicts** (19.0.0 → 19.1.1)
+- **Removed deprecated dependencies** (@testing-library/react-hooks, @testing-library/jest-native)
+- **Updated Babel plugins** (proposal-class-properties → transform-class-properties)
+- **Added missing peer dependencies** (@babel/core, react-native-gesture-handler)
+- **Synchronized lock files** for both npm and yarn
 
 ## Support
 
