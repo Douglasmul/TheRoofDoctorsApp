@@ -303,6 +303,42 @@ export default function ManualPointSelectionCamera() {
   }, []);
 
   /**
+   * Insert point between two existing points
+   */
+  const insertPointBetween = useCallback((index: number) => {
+    const nextIndex = (index + 1) % selectedPoints.length;
+    const currentPoint = selectedPoints[index];
+    const nextPoint = selectedPoints[nextIndex];
+    
+    // Calculate midpoint
+    const midX = (currentPoint.x + nextPoint.x) / 2;
+    const midY = (currentPoint.y + nextPoint.y) / 2;
+    const midZ = (currentPoint.z + nextPoint.z) / 2;
+    const midScreenX = (currentPoint.screenX + nextPoint.screenX) / 2;
+    const midScreenY = (currentPoint.screenY + nextPoint.screenY) / 2;
+    
+    const newPoint: SelectedPoint = {
+      id: `point_${Date.now()}`,
+      x: midX,
+      y: midY,
+      z: midZ,
+      confidence: 1.0,
+      timestamp: new Date(),
+      sensorAccuracy: 'high',
+      screenX: midScreenX,
+      screenY: midScreenY,
+    };
+    
+    setSelectedPoints(prev => {
+      const newPoints = [...prev];
+      newPoints.splice(nextIndex, 0, newPoint);
+      return newPoints;
+    });
+    
+    Vibration.vibrate(50);
+  }, [selectedPoints]);
+
+  /**
    * Save points and return to manual measurement screen
    */
   const savePoints = useCallback(() => {
@@ -343,6 +379,23 @@ export default function ManualPointSelectionCamera() {
       area -= selectedPoints[j].x * selectedPoints[i].z;
     }
     return Math.abs(area) / 2;
+  }, [selectedPoints]);
+
+  /**
+   * Calculate approximate perimeter for preview
+   */
+  const calculatePreviewPerimeter = useCallback(() => {
+    if (selectedPoints.length < 3) return 0;
+
+    let perimeter = 0;
+    for (let i = 0; i < selectedPoints.length; i++) {
+      const j = (i + 1) % selectedPoints.length;
+      const dx = selectedPoints[j].x - selectedPoints[i].x;
+      const dy = selectedPoints[j].y - selectedPoints[i].y;
+      const dz = selectedPoints[j].z - selectedPoints[i].z;
+      perimeter += Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+    return perimeter;
   }, [selectedPoints]);
 
   // Permission handling
@@ -417,11 +470,21 @@ export default function ManualPointSelectionCamera() {
 
           {/* Status overlay */}
           <View style={styles.statusOverlay}>
-            <Text style={styles.statusText}>Surface Type: {surfaceType}</Text>
+            <Text style={styles.statusText}>Surface: {surfaceType}</Text>
             <Text style={styles.statusText}>Points: {selectedPoints.length}</Text>
             {selectedPoints.length >= 3 && (
-              <Text style={styles.statusText}>
-                Est. Area: {calculatePreviewArea().toFixed(2)} m²
+              <>
+                <Text style={styles.statusText}>
+                  Area: {calculatePreviewArea().toFixed(2)} m² ({(calculatePreviewArea() * 10.764).toFixed(0)} sq ft)
+                </Text>
+                <Text style={styles.statusText}>
+                  Perimeter: {calculatePreviewPerimeter().toFixed(1)} m
+                </Text>
+              </>
+            )}
+            {selectedPoints.length > 0 && selectedPoints.length < 3 && (
+              <Text style={styles.statusWarning}>
+                Need {3 - selectedPoints.length} more points
               </Text>
             )}
           </View>
@@ -443,12 +506,21 @@ export default function ManualPointSelectionCamera() {
           </TouchableOpacity>
 
           {isEditing && selectedPointIndex !== null && (
-            <TouchableOpacity
-              style={[styles.controlButton, styles.removeButton]}
-              onPress={removeSelectedPoint}
-            >
-              <Text style={styles.controlButtonText}>Remove Point</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={[styles.controlButton, styles.insertButton]}
+                onPress={() => insertPointBetween(selectedPointIndex)}
+              >
+                <Text style={styles.controlButtonText}>Insert Point</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.controlButton, styles.removeButton]}
+                onPress={removeSelectedPoint}
+              >
+                <Text style={styles.controlButtonText}>Remove Point</Text>
+              </TouchableOpacity>
+            </>
           )}
 
           <TouchableOpacity
@@ -631,6 +703,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 2,
   },
+  statusWarning: {
+    color: '#FF9800',
+    fontSize: 12,
+    marginBottom: 2,
+    fontWeight: 'bold',
+  },
   controlPanel: {
     backgroundColor: 'rgba(0, 0, 0, 0.9)',
     padding: 20,
@@ -656,6 +734,9 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     backgroundColor: '#F44336',
+  },
+  insertButton: {
+    backgroundColor: '#2196F3',
   },
   clearButton: {
     backgroundColor: '#FF5722',

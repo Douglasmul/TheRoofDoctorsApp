@@ -194,6 +194,9 @@ export class RoofMeasurementEngine {
     // Recalculate area with higher precision
     const recalculatedArea = this.calculatePlaneArea(plane.boundaries);
     
+    // Calculate perimeter
+    const perimeter = this.calculatePlanePerimeter(plane.boundaries);
+    
     // Apply pitch correction
     const pitchCorrectedArea = this.applyPitchCorrection(recalculatedArea, plane.pitchAngle);
     
@@ -203,6 +206,7 @@ export class RoofMeasurementEngine {
     return {
       ...plane,
       area: this.roundToPrecision(recalculatedArea),
+      perimeter: this.roundToPrecision(perimeter),
       projectedArea: this.roundToPrecision(pitchCorrectedArea),
       material: enhancedMaterial,
     };
@@ -227,6 +231,38 @@ export class RoofMeasurementEngine {
     }
 
     return Math.abs(area) / 2;
+  }
+
+  /**
+   * Calculate perimeter of plane using boundary points
+   */
+  private calculatePlanePerimeter(boundaries: ARPoint[]): number {
+    if (boundaries.length < 3) {
+      throw new Error('Plane must have at least 3 boundary points');
+    }
+
+    let perimeter = 0;
+    const n = boundaries.length;
+
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const dx = boundaries[j].x - boundaries[i].x;
+      const dy = boundaries[j].y - boundaries[i].y;
+      const dz = boundaries[j].z - boundaries[i].z;
+      
+      // Calculate 3D distance between points
+      const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      perimeter += distance;
+    }
+
+    return perimeter;
+  }
+
+  /**
+   * Convert perimeter from meters to feet
+   */
+  public convertToFeet(lengthInMeters: number): number {
+    return lengthInMeters * 3.28084; // 1 meter = 3.28084 feet
   }
 
   /**
@@ -312,9 +348,8 @@ export class RoofMeasurementEngine {
     const costEstimate = await this.calculateCostEstimate(finalArea, dominantMaterial);
 
     return {
-      baseArea: this.roundToPrecision(totalArea),
+      baseArea: this.roundToPrecision(baseArea),
       adjustedArea: this.roundToPrecision(finalArea),
-      totalArea: this.roundToPrecision(finalArea),
       wastePercent: this.config.wasteFactorPercent + (complexityFactor - 1) * 100,
       dominantMaterial,
       materialUnits: this.roundToPrecision(finalArea), // Basic estimate
