@@ -13,6 +13,8 @@ import ManualPointSelectionCamera from '../screens/ManualPointSelectionCamera';
 import MeasurementReviewScreen from '../screens/MeasurementReviewScreen';
 import SignupScreen from '../screens/SignupScreen';
 import LoginScreen from '../screens/LoginScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import EmailVerificationScreen from '../screens/EmailVerificationScreen';
 import QuoteScreen from '../screens/QuoteScreen';
 import AdminScreen from '../screens/AdminScreen';
 import ErrorScreen from '../screens/ErrorScreen';
@@ -89,6 +91,16 @@ export default function AppNavigator() {
           name="Login" 
           component={LoginScreen} 
           options={{ title: 'Login' }}
+        />
+        <Stack.Screen 
+          name="ForgotPassword" 
+          component={ForgotPasswordScreen} 
+          options={{ title: 'Reset Password' }}
+        />
+        <Stack.Screen 
+          name="EmailVerification" 
+          component={EmailVerificationScreen} 
+          options={{ title: 'Verify Email' }}
         />
 
         {/* User Account Screens */}
