@@ -265,6 +265,7 @@ export default function ManualPointSelectionCamera() {
   // Camera and permissions
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
+  const [zoom, setZoom] = useState(0); // Camera zoom level (0-1)
   const cameraRef = useRef<CameraView>(null);
   
   // Point selection state
@@ -332,15 +333,25 @@ export default function ManualPointSelectionCamera() {
   }, [existingPoints]);
 
   /**
-   * Add point at specific screen location
+   * Add point at specific screen location with improved coordinate mapping
    */
   const addPointAtLocation = useCallback((locationX: number, locationY: number) => {
     if (!cameraReady) return;
 
-    // Convert screen coordinates to world coordinates (simplified)
-    const worldX = (locationX - screenWidth / 2) / 100; // Scale factor
+    // Convert screen coordinates to world coordinates with consistent scaling
+    // Normalize to range [-1, 1] then scale to meters
+    const normalizedX = (locationX - screenWidth / 2) / (screenWidth / 2);
+    const normalizedZ = (locationY - screenHeight / 2) / (screenHeight / 2);
+    
+    // Scale to realistic dimensions - adjust for zoom level
+    // Base scale represents ~10m x 10m area, zoom reduces effective area
+    const baseScale = 5; // 5 meters from center at 0% zoom
+    const zoomFactor = 1 - (zoom * 0.8); // Zoom reduces the effective area by up to 80%
+    const effectiveScale = baseScale * zoomFactor;
+    
+    const worldX = normalizedX * effectiveScale;
     const worldY = 0; // Assume ground level for manual measurement
-    const worldZ = (locationY - screenHeight / 2) / 100;
+    const worldZ = normalizedZ * effectiveScale;
 
     const newPoint: SelectedPoint = {
       id: `point_${Date.now()}_${Math.random()}`,
@@ -355,7 +366,7 @@ export default function ManualPointSelectionCamera() {
     };
 
     setSelectedPoints(prev => [...prev, newPoint]);
-  }, [cameraReady]);
+  }, [cameraReady, zoom]);
 
   /**
    * Handle camera tap to add new point
@@ -385,9 +396,14 @@ export default function ManualPointSelectionCamera() {
   const handlePointMove = useCallback((index: number, screenX: number, screenY: number) => {
     setSelectedPoints(prev => prev.map((point, i) => {
       if (i === index) {
-        // Update both screen and world coordinates
-        const worldX = (screenX - screenWidth / 2) / 100;
-        const worldZ = (screenY - screenHeight / 2) / 100;
+        // Update both screen and world coordinates using consistent scaling
+        const normalizedX = (screenX - screenWidth / 2) / (screenWidth / 2);
+        const normalizedZ = (screenY - screenHeight / 2) / (screenHeight / 2);
+        const baseScale = 5;
+        const zoomFactor = 1 - (zoom * 0.8);
+        const effectiveScale = baseScale * zoomFactor;
+        const worldX = normalizedX * effectiveScale;
+        const worldZ = normalizedZ * effectiveScale;
         
         return {
           ...point,
@@ -399,7 +415,7 @@ export default function ManualPointSelectionCamera() {
       }
       return point;
     }));
-  }, []);
+  }, [zoom]);
 
   /**
    * Remove selected point
@@ -510,7 +526,7 @@ export default function ManualPointSelectionCamera() {
   }, [selectedPoints, sessionId, surfaceType, navigation]);
 
   /**
-   * Enhanced area calculation with improved accuracy
+   * Enhanced area calculation with improved scaling for real-world measurements
    */
   const calculatePreviewArea = useCallback(() => {
     if (selectedPoints.length < 3) return 0;
@@ -519,14 +535,15 @@ export default function ManualPointSelectionCamera() {
     let area = 0;
     for (let i = 0; i < selectedPoints.length; i++) {
       const j = (i + 1) % selectedPoints.length;
-      // Use x and y coordinates for 2D projection
-      area += selectedPoints[i].x * selectedPoints[j].y;
-      area -= selectedPoints[j].x * selectedPoints[i].y;
+      // Use x and z coordinates for 2D projection (since y is ground level)
+      area += selectedPoints[i].x * selectedPoints[j].z;
+      area -= selectedPoints[j].x * selectedPoints[i].z;
     }
     const calculatedArea = Math.abs(area) / 2;
     
     // Apply realistic scaling factor for roof measurements
-    const scaleFactor = 0.01; // Adjust this based on your coordinate system
+    // Assume each unit in screen space represents roughly 0.1 meters
+    const scaleFactor = 0.1; // More realistic scale factor
     return calculatedArea * scaleFactor;
   }, [selectedPoints]);
 
@@ -549,7 +566,8 @@ export default function ManualPointSelectionCamera() {
     }
     
     // Apply realistic scaling factor for roof measurements
-    const scaleFactor = 0.1; // Adjust this based on your coordinate system
+    // Match the area calculation scale factor for consistency
+    const scaleFactor = 0.1; // Consistent with area calculation
     return perimeter * scaleFactor;
   }, [selectedPoints]);
 
@@ -561,9 +579,9 @@ export default function ManualPointSelectionCamera() {
       return { isValid: false, message: `Need ${3 - selectedPoints.length} more points` };
     }
 
-    // Check for very small area
+    // Check for very small area - Relaxed threshold for real-world measurements
     const area = calculatePreviewArea();
-    if (area < 0.5) {
+    if (area < 0.1) {
       return { isValid: false, message: 'Area too small - spread points further apart' };
     }
 
@@ -614,6 +632,7 @@ export default function ManualPointSelectionCamera() {
           ref={cameraRef}
           style={styles.camera}
           facing="back"
+          zoom={zoom}
           onCameraReady={() => setCameraReady(true)}
           onTouchEnd={handleCameraTap}
         />
@@ -786,6 +805,29 @@ export default function ManualPointSelectionCamera() {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Zoom controls */}
+        <View style={styles.controlRow}>
+          <TouchableOpacity
+            style={[styles.controlButton, styles.zoomButton]}
+            onPress={() => setZoom(Math.max(0, zoom - 0.1))}
+            disabled={zoom <= 0}
+          >
+            <Text style={styles.controlButtonText}>Zoom Out</Text>
+          </TouchableOpacity>
+          
+          <Text style={styles.zoomIndicator}>
+            Zoom: {Math.round(zoom * 100)}%
+          </Text>
+          
+          <TouchableOpacity
+            style={[styles.controlButton, styles.zoomButton]}
+            onPress={() => setZoom(Math.min(1, zoom + 0.1))}
+            disabled={zoom >= 1}
+          >
+            <Text style={styles.controlButtonText}>Zoom In</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Bottom row - main actions */}
         <View style={styles.controlRow}>
@@ -1106,6 +1148,18 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     backgroundColor: '#FF5722',
+  },
+  zoomButton: {
+    backgroundColor: '#9C27B0',
+  },
+  zoomIndicator: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    minWidth: 80,
+    textAlign: 'center',
   },
   backButton: {
     backgroundColor: '#6c757d',
