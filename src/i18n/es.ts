@@ -405,6 +405,173 @@ export const es = {
     },
   },
 
+  // Settings Management
+  settings: {
+    title: 'Configuración',
+    subtitle: 'Configure las preferencias de la aplicación y cuenta',
+    save: 'Guardar Configuración',
+    saveSuccess: 'Configuración guardada exitosamente',
+    saveError: 'Error al guardar la configuración',
+    
+    // Language & Region
+    language: {
+      title: 'Idioma y Región',
+      language: 'Idioma',
+      languageDescription: 'Seleccione su idioma preferido',
+      region: 'Región',
+      dateFormat: 'Formato de Fecha',
+      timeFormat: 'Formato de Hora',
+      time12h: '12 horas (AM/PM)',
+      time24h: '24 horas',
+    },
+    
+    // Measurement Units
+    units: {
+      title: 'Unidades de Medida',
+      system: 'Sistema de Medidas',
+      systemDescription: 'Elija entre unidades métricas e imperiales',
+      imperial: 'Imperial (pies, pulgadas)',
+      metric: 'Métrico (metros, centímetros)',
+      area: 'Unidades de Área',
+      squareFeet: 'Pies Cuadrados (ft²)',
+      squareMeters: 'Metros Cuadrados (m²)',
+      length: 'Unidades de Longitud',
+      feet: 'Pies',
+      meters: 'Metros',
+    },
+    
+    // App Preferences
+    app: {
+      title: 'Preferencias de la App',
+      theme: 'Tema de la App',
+      themeLight: 'Tema Claro',
+      themeDark: 'Tema Oscuro',
+      themeAuto: 'Auto (Sistema)',
+      notifications: 'Habilitar Notificaciones',
+      notificationsDescription: 'Recibir notificaciones y alertas de la app',
+      pushNotifications: 'Notificaciones Push',
+      pushNotificationsDescription: 'Recibir notificaciones push en su dispositivo',
+      emailNotifications: 'Notificaciones por Email',
+      emailNotificationsDescription: 'Recibir notificaciones por correo electrónico',
+    },
+    
+    // AR & Camera
+    ar: {
+      title: 'Configuración AR y Cámara',
+      quality: 'Calidad AR',
+      qualityDescription: 'Mayor calidad usa más batería y poder de procesamiento',
+      qualityHigh: 'Alta Calidad',
+      qualityMedium: 'Calidad Media',
+      qualityLow: 'Baja Calidad (Ahorrar Batería)',
+      autoCapture: 'Captura Automática',
+      autoCaptureDescription: 'Capturar mediciones automáticamente cuando estén estables',
+      gridOverlay: 'Cuadrícula Superpuesta',
+      gridOverlayDescription: 'Mostrar cuadrícula de alineación durante mediciones',
+      voiceGuidance: 'Guía de Voz',
+      voiceGuidanceDescription: 'Proporcionar instrucciones habladas durante mediciones',
+    },
+    
+    // Privacy & Security
+    privacy: {
+      title: 'Privacidad y Seguridad',
+      location: 'Servicios de Ubicación',
+      locationDescription: 'Permitir que la app acceda a la ubicación del dispositivo',
+      dataCollection: 'Recopilación de Datos',
+      dataCollectionDescription: 'Ayudar a mejorar la app compartiendo datos de uso',
+      analytics: 'Analíticas',
+      analyticsDescription: 'Compartir estadísticas de uso anónimas',
+      biometric: 'Autenticación Biométrica',
+      biometricDescription: 'Usar huella digital o reconocimiento facial para asegurar la app',
+    },
+    
+    // Advanced Settings
+    advanced: {
+      title: 'Configuración Avanzada',
+      developer: 'Modo Desarrollador',
+      developerDescription: 'Habilitar funciones de depuración avanzadas',
+      debug: 'Modo de Depuración',
+      debugDescription: 'Mostrar información de registro detallada',
+      caching: 'Habilitar Caché',
+      cachingDescription: 'Almacenar datos localmente para mejor rendimiento',
+      offline: 'Modo Sin Conexión',
+      offlineDescription: 'Permitir funcionalidad básica sin internet',
+    },
+    
+    // Reset Settings
+    reset: {
+      title: 'Restablecer Configuración',
+      message: '¿Está seguro de que desea restablecer toda la configuración a sus valores predeterminados? Esta acción no se puede deshacer.',
+      confirm: 'Restablecer Toda la Configuración',
+      success: 'La configuración ha sido restablecida a los valores predeterminados',
+    },
+  },
+
+  // Profile Management
+  profile: {
+    title: 'Perfil',
+    subtitle: 'Administre su cuenta y preferencias',
+    
+    // Personal Information
+    personalInfo: {
+      title: 'Información Personal',
+      name: 'Nombre Completo',
+      email: 'Dirección de Correo', 
+      company: 'Empresa',
+      role: 'Función',
+      joinedDate: 'Miembro Desde',
+      lastActive: 'Última Actividad',
+      profilePicture: 'Foto de Perfil',
+    },
+    
+    // Stats
+    stats: {
+      title: 'Estadísticas',
+      totalMeasurements: 'Mediciones Totales',
+      accuracyRating: 'Calificación de Precisión',
+      averageProjectSize: 'Tamaño Promedio de Proyecto',
+      completedProjects: 'Proyectos Completados',
+    },
+    
+    // Certifications
+    certifications: {
+      title: 'Certificaciones',
+      noCertifications: 'No se han agregado certificaciones aún',
+      addCertification: 'Agregar Certificación',
+    },
+    
+    // Actions
+    actions: {
+      edit: 'Editar Perfil',
+      save: 'Guardar Cambios',
+      cancel: 'Cancelar',
+      changePhoto: 'Cambiar Foto',
+      removePhoto: 'Quitar Foto',
+      changePassword: 'Cambiar Contraseña',
+      logout: 'Cerrar Sesión',
+      deleteAccount: 'Eliminar Cuenta',
+    },
+    
+    // Edit Mode
+    edit: {
+      title: 'Editar Perfil',
+      saveSuccess: 'Perfil actualizado exitosamente',
+      saveError: 'Error al actualizar el perfil',
+      validation: {
+        nameRequired: 'El nombre completo es obligatorio',
+        emailRequired: 'La dirección de correo es obligatoria',
+        emailInvalid: 'Por favor ingrese un correo válido',
+      },
+    },
+    
+    // Photo Selection
+    photo: {
+      selectSource: 'Seleccionar Fuente de Foto',
+      camera: 'Tomar Foto',
+      gallery: 'Elegir de Galería',
+      removeConfirm: '¿Está seguro de que desea quitar su foto de perfil?',
+    },
+  },
+
   // Voice Guidance
   voice: {
     enabled: 'Guía de voz habilitada',
