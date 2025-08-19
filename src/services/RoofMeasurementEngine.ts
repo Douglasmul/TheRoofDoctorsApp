@@ -312,9 +312,12 @@ export class RoofMeasurementEngine {
     const costEstimate = await this.calculateCostEstimate(finalArea, dominantMaterial);
 
     return {
+      baseArea: this.roundToPrecision(totalArea),
+      adjustedArea: this.roundToPrecision(finalArea),
       totalArea: this.roundToPrecision(finalArea),
       wastePercent: this.config.wasteFactorPercent + (complexityFactor - 1) * 100,
       dominantMaterial,
+      materialUnits: this.roundToPrecision(finalArea), // Basic estimate
       materialSpecific,
       costEstimate,
     };
@@ -726,12 +729,9 @@ export class RoofMeasurementEngine {
       timestamp: new Date(),
       action,
       userId,
+      description: details,
       sessionId,
-      details,
-      metadata: {
-        platform: Platform.OS,
-        version: '1.0.0',
-      },
+      dataHash: `hash_${Date.now()}`,
     };
 
     this.auditTrail.push(entry);
