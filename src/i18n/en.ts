@@ -561,6 +561,72 @@ export const en = {
     },
   },
 
+  // Profile Management
+  profile: {
+    title: 'Profile',
+    subtitle: 'Manage your account and preferences',
+    
+    // Personal Information
+    personalInfo: {
+      title: 'Personal Information',
+      name: 'Full Name',
+      email: 'Email Address', 
+      company: 'Company',
+      role: 'Role',
+      joinedDate: 'Member Since',
+      lastActive: 'Last Active',
+      profilePicture: 'Profile Picture',
+    },
+    
+    // Stats
+    stats: {
+      title: 'Statistics',
+      totalMeasurements: 'Total Measurements',
+      accuracyRating: 'Accuracy Rating',
+      averageProjectSize: 'Average Project Size',
+      completedProjects: 'Completed Projects',
+    },
+    
+    // Certifications
+    certifications: {
+      title: 'Certifications',
+      noCertifications: 'No certifications added yet',
+      addCertification: 'Add Certification',
+    },
+    
+    // Actions
+    actions: {
+      edit: 'Edit Profile',
+      save: 'Save Changes',
+      cancel: 'Cancel',
+      changePhoto: 'Change Photo',
+      removePhoto: 'Remove Photo',
+      changePassword: 'Change Password',
+      logout: 'Sign Out',
+      deleteAccount: 'Delete Account',
+    },
+    
+    // Edit Mode
+    edit: {
+      title: 'Edit Profile',
+      saveSuccess: 'Profile updated successfully',
+      saveError: 'Failed to update profile',
+      validation: {
+        nameRequired: 'Full name is required',
+        emailRequired: 'Email address is required',
+        emailInvalid: 'Please enter a valid email address',
+      },
+    },
+    
+    // Photo Selection
+    photo: {
+      selectSource: 'Select Photo Source',
+      camera: 'Take Photo',
+      gallery: 'Choose from Gallery',
+      removeConfirm: 'Are you sure you want to remove your profile photo?',
+    },
+  },
+
   // Voice Guidance
   voice: {
     enabled: 'Voice guidance enabled',

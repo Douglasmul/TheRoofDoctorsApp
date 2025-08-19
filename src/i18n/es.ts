@@ -405,6 +405,72 @@ export const es = {
     },
   },
 
+  // Profile Management
+  profile: {
+    title: 'Perfil',
+    subtitle: 'Administre su cuenta y preferencias',
+    
+    // Personal Information
+    personalInfo: {
+      title: 'Información Personal',
+      name: 'Nombre Completo',
+      email: 'Dirección de Correo', 
+      company: 'Empresa',
+      role: 'Función',
+      joinedDate: 'Miembro Desde',
+      lastActive: 'Última Actividad',
+      profilePicture: 'Foto de Perfil',
+    },
+    
+    // Stats
+    stats: {
+      title: 'Estadísticas',
+      totalMeasurements: 'Mediciones Totales',
+      accuracyRating: 'Calificación de Precisión',
+      averageProjectSize: 'Tamaño Promedio de Proyecto',
+      completedProjects: 'Proyectos Completados',
+    },
+    
+    // Certifications
+    certifications: {
+      title: 'Certificaciones',
+      noCertifications: 'No se han agregado certificaciones aún',
+      addCertification: 'Agregar Certificación',
+    },
+    
+    // Actions
+    actions: {
+      edit: 'Editar Perfil',
+      save: 'Guardar Cambios',
+      cancel: 'Cancelar',
+      changePhoto: 'Cambiar Foto',
+      removePhoto: 'Quitar Foto',
+      changePassword: 'Cambiar Contraseña',
+      logout: 'Cerrar Sesión',
+      deleteAccount: 'Eliminar Cuenta',
+    },
+    
+    // Edit Mode
+    edit: {
+      title: 'Editar Perfil',
+      saveSuccess: 'Perfil actualizado exitosamente',
+      saveError: 'Error al actualizar el perfil',
+      validation: {
+        nameRequired: 'El nombre completo es obligatorio',
+        emailRequired: 'La dirección de correo es obligatoria',
+        emailInvalid: 'Por favor ingrese un correo válido',
+      },
+    },
+    
+    // Photo Selection
+    photo: {
+      selectSource: 'Seleccionar Fuente de Foto',
+      camera: 'Tomar Foto',
+      gallery: 'Elegir de Galería',
+      removeConfirm: '¿Está seguro de que desea quitar su foto de perfil?',
+    },
+  },
+
   // Voice Guidance
   voice: {
     enabled: 'Guía de voz habilitada',

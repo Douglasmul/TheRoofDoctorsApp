@@ -13,6 +13,39 @@ import { en } from './en';
 import { es } from './es';
 
 /**
+ * Polyfill for Intl.PluralRules if not available
+ */
+if (typeof Intl === 'undefined' || typeof Intl.PluralRules === 'undefined') {
+  // Simple polyfill for basic pluralization
+  if (typeof Intl === 'undefined') {
+    (global as any).Intl = {};
+  }
+  
+  (global as any).Intl.PluralRules = class PluralRules {
+    private locale: string;
+    
+    constructor(locale?: string) {
+      this.locale = locale || 'en';
+    }
+    
+    select(count: number): string {
+      // Basic English pluralization rules
+      if (this.locale.startsWith('en')) {
+        return count === 1 ? 'one' : 'other';
+      }
+      
+      // Basic Spanish pluralization rules
+      if (this.locale.startsWith('es')) {
+        return count === 1 ? 'one' : 'other';
+      }
+      
+      // Default fallback
+      return count === 1 ? 'one' : 'other';
+    }
+  };
+}
+
+/**
  * Language detection plugin for React Native
  */
 const languageDetector: any = {
@@ -28,8 +61,17 @@ const languageDetector: any = {
       }
 
       // Fall back to device locale
-      const deviceLocale = Localization.locale;
-      const languageCode = deviceLocale.split('-')[0];
+      const locales = Localization.getLocales();
+      const deviceLocale = locales && locales.length > 0 ? locales[0].languageTag : 'en-US';
+      
+      // Safely extract language code with null checks
+      let languageCode = 'en'; // Default fallback
+      if (deviceLocale && typeof deviceLocale === 'string') {
+        const parts = deviceLocale.split('-');
+        if (parts.length > 0 && parts[0]) {
+          languageCode = parts[0];
+        }
+      }
       
       // Check if we support the detected language
       const supportedLanguages = ['en', 'es'];
@@ -330,9 +372,15 @@ export class I18nManager {
    * Get pluralization rules for current language
    */
   static getPluralRule(count: number): string {
-    // Use Intl.PluralRules for accurate pluralization
-    const pr = new Intl.PluralRules(i18n.language);
-    return pr.select(count);
+    try {
+      // Use Intl.PluralRules for accurate pluralization
+      const pr = new Intl.PluralRules(i18n.language);
+      return pr.select(count);
+    } catch (error) {
+      console.warn('Error getting plural rule, falling back to simple logic:', error);
+      // Fallback to simple pluralization
+      return count === 1 ? 'one' : 'other';
+    }
   }
 
   /**
