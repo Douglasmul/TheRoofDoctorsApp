@@ -461,13 +461,18 @@ export function useARPlaneDetection(
       return 'primary';
     }
     
-    // Secondary surfaces: smaller areas or different orientations
+    // Dormer: smaller to medium area, various pitches
+    if (area > 8 && area <= 25 && pitchAngle > 20) {
+      return 'dormer';
+    }
+    
+    // Secondary surfaces: medium areas or different orientations
     if (area > 5 && area <= 25) {
       return 'secondary';
     }
     
-    // Dormer: small area, steep pitch
-    if (area <= 5 && pitchAngle > 45) {
+    // Small dormer: small area, steep pitch
+    if (area <= 8 && pitchAngle > 45) {
       return 'dormer';
     }
     
@@ -587,9 +592,9 @@ export function useARPlaneDetection(
     if (sessionDuration > 1000) {
       simulatedPlanes.push({
         id: 'roof_main',
-        area: 45.2,
-        confidence: 0.85,
-        distance: 8.5,
+        area: 45.2 + Math.random() * 5, // Vary the area slightly
+        confidence: 0.85 + Math.random() * 0.1,
+        distance: 8.5 + Math.random() * 1.5,
         boundaries: [
           { x: -3.0, y: 0.0, z: -5.0, confidence: 0.9, timestamp: new Date(), sensorAccuracy: 'high' },
           { x: 3.0, y: 0.0, z: -5.0, confidence: 0.9, timestamp: new Date(), sensorAccuracy: 'high' },
@@ -603,14 +608,46 @@ export function useARPlaneDetection(
     if (sessionDuration > 3000) {
       simulatedPlanes.push({
         id: 'roof_section_2',
-        area: 28.1,
-        confidence: 0.78,
-        distance: 10.2,
+        area: 28.1 + Math.random() * 8, // Different area range
+        confidence: 0.78 + Math.random() * 0.12,
+        distance: 10.2 + Math.random() * 2.0,
         boundaries: [
           { x: 3.0, y: 0.5, z: -5.0, confidence: 0.8, timestamp: new Date(), sensorAccuracy: 'high' },
           { x: 6.0, y: 0.5, z: -5.0, confidence: 0.8, timestamp: new Date(), sensorAccuracy: 'high' },
           { x: 6.0, y: 0.5, z: -7.5, confidence: 0.8, timestamp: new Date(), sensorAccuracy: 'high' },
           { x: 3.0, y: 0.5, z: -7.5, confidence: 0.8, timestamp: new Date(), sensorAccuracy: 'high' },
+        ]
+      });
+    }
+    
+    // First dormer appears after 5 seconds
+    if (sessionDuration > 5000) {
+      simulatedPlanes.push({
+        id: 'dormer_1',
+        area: 12.5 + Math.random() * 3, // Smaller dormer area
+        confidence: 0.72 + Math.random() * 0.15,
+        distance: 7.8 + Math.random() * 1.2,
+        boundaries: [
+          { x: -1.5, y: 1.2, z: -4.0, confidence: 0.75, timestamp: new Date(), sensorAccuracy: 'medium' },
+          { x: -0.5, y: 1.2, z: -4.0, confidence: 0.75, timestamp: new Date(), sensorAccuracy: 'medium' },
+          { x: -0.5, y: 1.2, z: -5.5, confidence: 0.75, timestamp: new Date(), sensorAccuracy: 'medium' },
+          { x: -1.5, y: 1.2, z: -5.5, confidence: 0.75, timestamp: new Date(), sensorAccuracy: 'medium' },
+        ]
+      });
+    }
+    
+    // Second dormer appears after 7 seconds  
+    if (sessionDuration > 7000) {
+      simulatedPlanes.push({
+        id: 'dormer_2',
+        area: 15.3 + Math.random() * 4, // Different dormer size
+        confidence: 0.68 + Math.random() * 0.18,
+        distance: 9.1 + Math.random() * 1.8,
+        boundaries: [
+          { x: 1.0, y: 1.5, z: -3.5, confidence: 0.7, timestamp: new Date(), sensorAccuracy: 'medium' },
+          { x: 2.2, y: 1.5, z: -3.5, confidence: 0.7, timestamp: new Date(), sensorAccuracy: 'medium' },
+          { x: 2.2, y: 1.5, z: -5.2, confidence: 0.7, timestamp: new Date(), sensorAccuracy: 'medium' },
+          { x: 1.0, y: 1.5, z: -5.2, confidence: 0.7, timestamp: new Date(), sensorAccuracy: 'medium' },
         ]
       });
     }
