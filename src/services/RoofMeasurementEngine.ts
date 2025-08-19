@@ -941,8 +941,8 @@ export class RoofMeasurementEngine {
   } {
     const totalPerimeter = measurement.planes.reduce((sum, plane) => sum + (plane.perimeter || 0), 0);
     const avgConfidence = measurement.planes.reduce((sum, plane) => sum + plane.confidence, 0) / measurement.planes.length;
-    const surfaceTypes = [...new Set(measurement.planes.map(p => p.type))];
-    const materials = [...new Set(measurement.planes.map(p => p.material).filter(Boolean))];
+    const surfaceTypes = Array.from(new Set(measurement.planes.map(p => p.type)));
+    const materials = Array.from(new Set(measurement.planes.map(p => p.material).filter(Boolean)));
 
     const overview = `Measurement complete: ${measurement.planes.length} surfaces, ` +
       `${this.roundToPrecision(measurement.totalArea)} m² total area, ` +

@@ -388,8 +388,12 @@ export default function ManualMeasurementScreen() {
       // Add validation results to measurement
       measurement.validationResult = validationResult;
       
-      // Navigate to review screen
-      navigation.navigate('MeasurementReview', { measurement, isManual: true });
+      // Navigate to review screen with validation results
+      navigation.navigate('MeasurementReview', { 
+        measurement, 
+        isManual: true, 
+        validationResult 
+      });
       
     } catch (error) {
       console.error('Save error:', error);

@@ -871,6 +871,68 @@ export default function MeasurementReviewScreen() {
           </View>
         </View>
 
+        {/* Enhanced Validation Results Section */}
+        {route.params?.validationResult && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Measurement Validation</Text>
+            
+            <View style={[
+              styles.validationCard,
+              { 
+                backgroundColor: route.params.validationResult.isValid 
+                  ? 'rgba(76, 175, 80, 0.1)' 
+                  : 'rgba(244, 67, 54, 0.1)' 
+              }
+            ]}>
+              <View style={styles.validationHeader}>
+                <Text style={[
+                  styles.validationStatus,
+                  { 
+                    color: route.params.validationResult.isValid 
+                      ? '#4CAF50' 
+                      : '#F44336' 
+                  }
+                ]}>
+                  {route.params.validationResult.isValid ? '✓ Valid' : '⚠ Issues Found'}
+                </Text>
+                <Text style={styles.qualityScore}>
+                  Quality: {route.params.validationResult.qualityScore}/100
+                </Text>
+              </View>
+
+              {/* Errors */}
+              {route.params.validationResult.errors.length > 0 && (
+                <View style={styles.validationSection}>
+                  <Text style={styles.validationSectionTitle}>Issues to Fix:</Text>
+                  {route.params.validationResult.errors.map((error, index) => (
+                    <Text key={index} style={styles.validationError}>• {error}</Text>
+                  ))}
+                </View>
+              )}
+
+              {/* Warnings */}
+              {route.params.validationResult.warnings.length > 0 && (
+                <View style={styles.validationSection}>
+                  <Text style={styles.validationSectionTitle}>Warnings:</Text>
+                  {route.params.validationResult.warnings.map((warning, index) => (
+                    <Text key={index} style={styles.validationWarning}>• {warning}</Text>
+                  ))}
+                </View>
+              )}
+
+              {/* Recommendations */}
+              {route.params.validationResult.recommendations.length > 0 && (
+                <View style={styles.validationSection}>
+                  <Text style={styles.validationSectionTitle}>Recommendations:</Text>
+                  {route.params.validationResult.recommendations.slice(0, 3).map((rec, index) => (
+                    <Text key={index} style={styles.validationRecommendation}>• {rec}</Text>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
         {/* Planes Detail Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -1101,10 +1163,26 @@ export default function MeasurementReviewScreen() {
 
         <TouchableOpacity
           style={[styles.actionButton, styles.quoteButton]}
-          onPress={() => navigation.navigate('Quote', { measurement })}
+          onPress={() => {
+            // Enhanced quote creation with validation context
+            const quoteData = {
+              measurement: editedMeasurement,
+              materialCalculation,
+              validationResult: route.params?.validationResult,
+              isManual: route.params?.isManual || false,
+              qualityScore: route.params?.validationResult?.qualityScore || measurement.qualityMetrics.overallScore,
+            };
+            
+            navigation.navigate('Quote', { 
+              measurement: editedMeasurement,
+              measurementData: quoteData
+            });
+          }}
           disabled={loading}
         >
-          <Text style={styles.actionButtonText}>Create Quote</Text>
+          <Text style={styles.actionButtonText}>
+            {route.params?.isManual ? '📋 Create Quote' : 'Create Quote'}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
