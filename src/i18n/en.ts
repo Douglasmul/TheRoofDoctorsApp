@@ -561,6 +561,107 @@ export const en = {
     },
   },
 
+  // Settings Management
+  settings: {
+    title: 'Settings',
+    subtitle: 'Configure app preferences and account settings',
+    save: 'Save Settings',
+    saveSuccess: 'Settings saved successfully',
+    saveError: 'Failed to save settings',
+    
+    // Language & Region
+    language: {
+      title: 'Language & Region',
+      language: 'Language',
+      languageDescription: 'Select your preferred language',
+      region: 'Region',
+      dateFormat: 'Date Format',
+      timeFormat: 'Time Format',
+      time12h: '12-hour (AM/PM)',
+      time24h: '24-hour',
+    },
+    
+    // Measurement Units
+    units: {
+      title: 'Measurement Units',
+      system: 'Measurement System',
+      systemDescription: 'Choose between metric and imperial units',
+      imperial: 'Imperial (feet, inches)',
+      metric: 'Metric (meters, centimeters)',
+      area: 'Area Units',
+      squareFeet: 'Square Feet (ft²)',
+      squareMeters: 'Square Meters (m²)',
+      length: 'Length Units',
+      feet: 'Feet',
+      meters: 'Meters',
+    },
+    
+    // App Preferences
+    app: {
+      title: 'App Preferences',
+      theme: 'App Theme',
+      themeLight: 'Light Theme',
+      themeDark: 'Dark Theme',
+      themeAuto: 'Auto (System)',
+      notifications: 'Enable Notifications',
+      notificationsDescription: 'Receive app notifications and alerts',
+      pushNotifications: 'Push Notifications',
+      pushNotificationsDescription: 'Receive push notifications on your device',
+      emailNotifications: 'Email Notifications',
+      emailNotificationsDescription: 'Receive notifications via email',
+    },
+    
+    // AR & Camera
+    ar: {
+      title: 'AR & Camera Settings',
+      quality: 'AR Quality',
+      qualityDescription: 'Higher quality uses more battery and processing power',
+      qualityHigh: 'High Quality',
+      qualityMedium: 'Medium Quality',
+      qualityLow: 'Low Quality (Battery Saver)',
+      autoCapture: 'Auto Capture',
+      autoCaptureDescription: 'Automatically capture measurements when stable',
+      gridOverlay: 'Grid Overlay',
+      gridOverlayDescription: 'Show alignment grid during measurements',
+      voiceGuidance: 'Voice Guidance',
+      voiceGuidanceDescription: 'Provide spoken instructions during measurements',
+    },
+    
+    // Privacy & Security
+    privacy: {
+      title: 'Privacy & Security',
+      location: 'Location Services',
+      locationDescription: 'Allow app to access device location for measurements',
+      dataCollection: 'Data Collection',
+      dataCollectionDescription: 'Help improve the app by sharing usage data',
+      analytics: 'Analytics',
+      analyticsDescription: 'Share anonymous usage statistics',
+      biometric: 'Biometric Authentication',
+      biometricDescription: 'Use fingerprint or face recognition to secure the app',
+    },
+    
+    // Advanced Settings
+    advanced: {
+      title: 'Advanced Settings',
+      developer: 'Developer Mode',
+      developerDescription: 'Enable advanced debugging features',
+      debug: 'Debug Mode',
+      debugDescription: 'Show detailed logging information',
+      caching: 'Enable Caching',
+      cachingDescription: 'Cache data locally for better performance',
+      offline: 'Offline Mode',
+      offlineDescription: 'Allow basic functionality without internet',
+    },
+    
+    // Reset Settings
+    reset: {
+      title: 'Reset Settings',
+      message: 'Are you sure you want to reset all settings to their default values? This action cannot be undone.',
+      confirm: 'Reset All Settings',
+      success: 'Settings have been reset to defaults',
+    },
+  },
+
   // Profile Management
   profile: {
     title: 'Profile',
