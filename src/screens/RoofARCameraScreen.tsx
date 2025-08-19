@@ -290,14 +290,31 @@ export default function RoofARCameraScreen() {
     const baseProgress = {
       'initializing': 10,
       'detecting': 25,
-      'measuring': 50,
+      'measuring': 30,
       'complete': 100,
     };
     
     const stateProgress = baseProgress[session.state as keyof typeof baseProgress] || 0;
-    const planeProgress = Math.min(40, capturedPlanes.length * 10);
     
-    return Math.min(100, stateProgress + planeProgress);
+    // Enhanced plane progress calculation
+    if (session.state === 'measuring') {
+      if (capturedPlanes.length === 0) {
+        return stateProgress; // 30%
+      } else if (capturedPlanes.length === 1) {
+        return stateProgress + 25; // 55%
+      } else if (capturedPlanes.length === 2) {
+        return stateProgress + 45; // 75%
+      } else if (capturedPlanes.length >= 3) {
+        // 3+ planes is considered measurement ready - progress to 90-95%
+        const additionalProgress = Math.min(25, 20 + (capturedPlanes.length - 3) * 2);
+        return stateProgress + 45 + additionalProgress; // 95-97%
+      }
+    }
+    
+    // For non-measuring states, use base progress + small plane bonus
+    const planeBonus = session.state === 'detecting' ? Math.min(15, capturedPlanes.length * 5) : 0;
+    
+    return Math.min(100, stateProgress + planeBonus);
   }, [session.state, capturedPlanes.length]);
 
   /**
@@ -436,6 +453,44 @@ export default function RoofARCameraScreen() {
       }));
     }
   }, [arPlaneDetection.state.planes, config.voiceGuidance, config.hapticFeedback, announceToAccessibility]);
+
+  /**
+   * Check for automatic completion when sufficient measurements are captured
+   */
+  useEffect(() => {
+    // Only check for auto-completion during measuring state
+    if (session.state !== 'measuring' || capturedPlanes.length < 3) return;
+
+    // Check if we have sufficient quality measurements
+    const hasQualityMeasurements = capturedPlanes.length >= 3 && 
+      capturedPlanes.every(plane => plane.confidence > 0.7 && plane.area > 5);
+
+    // Auto-complete after a short delay if conditions are met
+    if (hasQualityMeasurements) {
+      const autoCompleteTimer = setTimeout(async () => {
+        console.log('[AR Camera] Auto-completing measurement with', capturedPlanes.length, 'quality surfaces');
+        
+        if (config.voiceGuidance) {
+          announceToAccessibility(`Measurement automatically completed with ${capturedPlanes.length} roof surfaces detected.`);
+        }
+        
+        if (config.hapticFeedback) {
+          Vibration.vibrate([100, 50, 100]);
+        }
+
+        // Call the actual completion function to process the measurement
+        try {
+          await proceedWithMeasurement();
+        } catch (error) {
+          console.error('Auto-completion failed:', error);
+          // If auto-completion fails, just update the state to complete
+          setSession(prev => ({ ...prev, state: 'complete' }));
+        }
+      }, 2000); // 2 second delay to allow user to see progress
+
+      return () => clearTimeout(autoCompleteTimer);
+    }
+  }, [session.state, capturedPlanes, config.voiceGuidance, config.hapticFeedback, announceToAccessibility, proceedWithMeasurement]);
 
   /**
    * Handle point capture
