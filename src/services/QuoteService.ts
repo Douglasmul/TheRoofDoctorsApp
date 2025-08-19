@@ -426,24 +426,250 @@ export class QuoteService {
   }
 
   /**
-   * Get default terms and conditions
+   * Export quote in specified format
    */
-  private getDefaultTerms(): string {
-    return `TERMS AND CONDITIONS:
-1. This quote is valid for 30 days from the date of issue.
-2. Work will be completed within 5-10 business days of contract signing, weather permitting.
-3. All materials include manufacturer warranties.
-4. Payment terms: 50% deposit required, balance due upon completion.
-5. Permits and inspections are included in the quoted price.
-6. Additional work not covered in this quote will be quoted separately.
-7. The Roof Doctors is fully licensed and insured.`;
+  async exportQuote(quote: Quote, format: 'pdf' | 'csv' | 'json'): Promise<string> {
+    switch (format) {
+      case 'pdf':
+        return this.generatePDFQuote(quote);
+      case 'csv':
+        return this.generateCSVQuote(quote);
+      case 'json':
+        return this.generateJSONQuote(quote);
+      default:
+        throw new Error('Unsupported export format');
+    }
   }
 
   /**
-   * Get default payment terms
+   * Generate professional PDF quote
    */
-  private getDefaultPaymentTerms(): string {
-    return '50% deposit required to start work, remaining balance due upon completion. We accept cash, check, and major credit cards.';
+  private generatePDFQuote(quote: Quote): string {
+    const sections = [
+      `PROFESSIONAL QUOTE - ${quote.quoteNumber}`,
+      `═══════════════════════════════════════`,
+      `${COMPANY_INFO.name}`,
+      `${COMPANY_INFO.legal.address.street}`,
+      `${COMPANY_INFO.legal.address.city}, ${COMPANY_INFO.legal.address.state} ${COMPANY_INFO.legal.address.zipCode}`,
+      `Phone: ${COMPANY_INFO.legal.phone}`,
+      `Email: ${COMPANY_INFO.legal.contactEmail}`,
+      '',
+      `QUOTE DATE: ${quote.createdAt.toLocaleDateString()}`,
+      `EXPIRES: ${quote.expiresAt.toLocaleDateString()}`,
+      `STATUS: ${quote.status.toUpperCase()}`,
+      '',
+      `CUSTOMER INFORMATION`,
+      `─────────────────────`,
+      `${quote.customer.firstName} ${quote.customer.lastName}`,
+      `Email: ${quote.customer.email}`,
+      `Phone: ${quote.customer.phone}`,
+      `Preferred Contact: ${quote.customer.preferredContact}`,
+      '',
+      `PROPERTY INFORMATION`,
+      `────────────────────`,
+      `${quote.property.address}`,
+      `${quote.property.city}, ${quote.property.state} ${quote.property.zipCode}`,
+      `Property Type: ${quote.property.propertyType}`,
+      `Stories: ${quote.property.stories}`,
+      '',
+      `MATERIAL PREFERENCES`,
+      `───────────────────`,
+      `Material Type: ${quote.materialPreferences.materialType}`,
+      `Warranty: ${quote.materialPreferences.warrantyYears} years`,
+      `Features: ${quote.materialPreferences.features.join(', ') || 'Standard'}`,
+      '',
+    ];
+
+    // Add measurement data if available
+    if (quote.measurement) {
+      sections.push(
+        `MEASUREMENT DATA`,
+        `───────────────`,
+        `Total Area: ${quote.measurement.totalArea.toFixed(2)} sq ft`,
+        `Pitch: ${quote.measurement.averagePitch.toFixed(1)}°`,
+        `Planes: ${quote.measurement.planes.length}`,
+        `Accuracy: ${quote.measurement.accuracy.toFixed(1)}%`,
+        `Measured: ${quote.measurement.capturedAt.toLocaleDateString()}`,
+        ''
+      );
+    }
+
+    // Add line items
+    sections.push(
+      `DETAILED BREAKDOWN`,
+      `─────────────────`,
+      ''
+    );
+
+    quote.lineItems.forEach(item => {
+      sections.push(
+        `${item.description}`,
+        `  Quantity: ${item.quantity} ${item.unit}`,
+        `  Unit Price: $${item.unitPrice.toFixed(2)}`,
+        `  Total: $${item.totalPrice.toFixed(2)}`,
+        ''
+      );
+    });
+
+    // Add selected add-ons
+    const selectedAddOns = quote.addOns.filter(addon => addon.selected);
+    if (selectedAddOns.length > 0) {
+      sections.push(
+        `ADDITIONAL SERVICES`,
+        `──────────────────`,
+        ''
+      );
+
+      selectedAddOns.forEach(addon => {
+        sections.push(
+          `${addon.name} - $${addon.price.toFixed(2)}`,
+          `  ${addon.description}`,
+          ''
+        );
+      });
+    }
+
+    // Add pricing summary
+    sections.push(
+      `PRICING SUMMARY`,
+      `──────────────`,
+      `Subtotal: $${quote.subtotal.toFixed(2)}`,
+      `Add-ons: $${quote.addOnsTotal.toFixed(2)}`,
+      `Tax: $${quote.tax.toFixed(2)}`,
+      ``,
+      `TOTAL: $${quote.total.toFixed(2)}`,
+      '',
+      `TERMS AND CONDITIONS`,
+      `───────────────────`,
+      quote.terms,
+      '',
+      `PAYMENT TERMS`,
+      `─────────────`,
+      quote.paymentTerms,
+      '',
+      `Thank you for choosing ${COMPANY_INFO.name}!`,
+      `This quote was generated using our professional AR measurement system.`,
+      '',
+      `Questions? Contact us at ${COMPANY_INFO.legal.supportEmail} or ${COMPANY_INFO.legal.phone}`
+    );
+
+    return sections.join('\n');
+  }
+
+  /**
+   * Generate CSV export
+   */
+  private generateCSVQuote(quote: Quote): string {
+    const rows = [
+      ['Quote Information', ''],
+      ['Quote Number', quote.quoteNumber],
+      ['Created Date', quote.createdAt.toLocaleDateString()],
+      ['Expires Date', quote.expiresAt.toLocaleDateString()],
+      ['Status', quote.status],
+      [''],
+      ['Customer Information', ''],
+      ['Name', `${quote.customer.firstName} ${quote.customer.lastName}`],
+      ['Email', quote.customer.email],
+      ['Phone', quote.customer.phone],
+      [''],
+      ['Property Information', ''],
+      ['Address', quote.property.address],
+      ['City', quote.property.city],
+      ['State', quote.property.state],
+      ['Zip Code', quote.property.zipCode],
+      ['Property Type', quote.property.propertyType],
+      [''],
+      ['Line Items', ''],
+      ['Description', 'Quantity', 'Unit', 'Unit Price', 'Total Price'],
+    ];
+
+    // Add line items
+    quote.lineItems.forEach(item => {
+      rows.push([
+        item.description,
+        item.quantity.toString(),
+        item.unit,
+        item.unitPrice.toFixed(2),
+        item.totalPrice.toFixed(2)
+      ]);
+    });
+
+    // Add pricing summary
+    rows.push(
+      [''],
+      ['Pricing Summary', ''],
+      ['Subtotal', quote.subtotal.toFixed(2)],
+      ['Add-ons Total', quote.addOnsTotal.toFixed(2)],
+      ['Tax', quote.tax.toFixed(2)],
+      ['Total', quote.total.toFixed(2)]
+    );
+
+    return rows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+  }
+
+  /**
+   * Generate JSON export
+   */
+  private generateJSONQuote(quote: Quote): string {
+    const exportData = {
+      quote: {
+        ...quote,
+        exportedAt: new Date().toISOString(),
+        exportedBy: COMPANY_INFO.app.name,
+        version: COMPANY_INFO.app.version,
+      },
+      metadata: {
+        format: 'json',
+        company: COMPANY_INFO.name,
+        contact: COMPANY_INFO.legal.contactEmail,
+      }
+    };
+
+    return JSON.stringify(exportData, null, 2);
+  }
+
+  /**
+   * Send quote via email (placeholder for future implementation)
+   */
+  async sendQuoteByEmail(quote: Quote, recipientEmail: string): Promise<boolean> {
+    try {
+      // In a real implementation, this would integrate with an email service
+      console.log(`Sending quote ${quote.quoteNumber} to ${recipientEmail}`);
+      
+      // For now, we'll simulate the email sending
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to send quote by email:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get quote status workflow states
+   */
+  getQuoteStatuses(): Array<{ value: Quote['status']; label: string; color: string }> {
+    return [
+      { value: 'draft', label: 'Draft', color: '#6b7280' },
+      { value: 'pending', label: 'Pending Review', color: '#f59e0b' },
+      { value: 'sent', label: 'Sent to Customer', color: '#3b82f6' },
+      { value: 'accepted', label: 'Accepted', color: '#22c55e' },
+      { value: 'rejected', label: 'Rejected', color: '#ef4444' },
+      { value: 'expired', label: 'Expired', color: '#9ca3af' },
+    ];
+  }
+
+  /**
+   * Update quote status
+   */
+  updateQuoteStatus(quote: Quote, newStatus: Quote['status']): Quote {
+    return {
+      ...quote,
+      status: newStatus,
+      updatedAt: new Date(),
+      lastModifiedBy: 'current-user', // TODO: Get from auth context
+    };
   }
 
   /**
