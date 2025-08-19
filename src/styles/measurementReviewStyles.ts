@@ -264,6 +264,9 @@ export const measurementReviewStyles = StyleSheet.create({
   syncButton: {
     backgroundColor: '#4CAF50',
   },
+  quoteButton: {
+    backgroundColor: '#e67e22',
+  },
   complianceButton: {
     backgroundColor: '#FF9800',
   },
