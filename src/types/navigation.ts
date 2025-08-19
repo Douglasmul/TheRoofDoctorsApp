@@ -4,6 +4,7 @@
  */
 
 import { RoofMeasurement } from '../types/measurement';
+import { Quote } from '../types/quote';
 
 export type RootStackParamList = {
   // Main App Screens
@@ -14,7 +15,7 @@ export type RootStackParamList = {
   MeasureRoof: undefined;
   RoofARCamera: undefined;
   MeasurementReview: { measurement: RoofMeasurement };
-  Quote: undefined;
+  Quote: { measurement?: RoofMeasurement; quoteId?: string };
   
   // Authentication Screens
   Login: undefined;
