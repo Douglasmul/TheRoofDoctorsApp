@@ -307,7 +307,7 @@ export default function RoofARCameraScreen() {
       } else if (capturedPlanes.length >= 3) {
         // 3+ planes is considered measurement ready - progress to 90-95%
         const additionalProgress = Math.min(25, 20 + (capturedPlanes.length - 3) * 2);
-        return stateProgress + 45 + additionalProgress; // 95-97%
+        return Math.min(100, stateProgress + 45 + additionalProgress); // 95-97%, capped at 100%
       }
     }
     

@@ -73,7 +73,7 @@ describe('RoofARCameraScreen Progress Calculation', () => {
       } else if (capturedPlanesLength >= 3) {
         // 3+ planes is considered measurement ready - progress to 90-95%
         const additionalProgress = Math.min(25, 20 + (capturedPlanesLength - 3) * 2);
-        return stateProgress + 45 + additionalProgress; // 95-97%
+        return Math.min(100, stateProgress + 45 + additionalProgress); // 95-97%, capped at 100%
       }
     }
     
@@ -121,5 +121,24 @@ describe('RoofARCameraScreen Progress Calculation', () => {
     expect(getProgress('measuring', 1)).toBe(55);
     expect(getProgress('measuring', 2)).toBe(75);
     expect(getProgress('measuring', 3)).toBe(95);
+  });
+
+  it('should never exceed 100% progress even with many detected surfaces', () => {
+    // Test with various high plane counts
+    expect(getProgress('measuring', 10)).toBeLessThanOrEqual(100);
+    expect(getProgress('measuring', 20)).toBeLessThanOrEqual(100);
+    expect(getProgress('measuring', 50)).toBeLessThanOrEqual(100);
+    
+    // Test with high detecting state plane counts
+    expect(getProgress('detecting', 10)).toBeLessThanOrEqual(100);
+    expect(getProgress('detecting', 20)).toBeLessThanOrEqual(100);
+    
+    // Ensure measuring state is capped at 100% with many planes
+    expect(getProgress('measuring', 10)).toBe(100);
+    expect(getProgress('measuring', 20)).toBe(100);
+    
+    // Detecting state has a bonus cap of 15, so with base 25: 25+15=40
+    expect(getProgress('detecting', 10)).toBe(40);
+    expect(getProgress('detecting', 3)).toBe(40); // 25 + min(15, 3*5) = 25 + 15 = 40
   });
 });
