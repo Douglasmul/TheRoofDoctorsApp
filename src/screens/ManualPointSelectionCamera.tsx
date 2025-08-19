@@ -15,6 +15,7 @@ import {
   PanResponder,
   Animated,
   Dimensions,
+  GestureResponderEvent,
 } from 'react-native';
 import Svg, { Line, Polygon } from 'react-native-svg';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -136,13 +137,22 @@ const PointMarker: React.FC<PointMarkerProps> = ({
 interface InstructionsProps {
   pointCount: number;
   isEditing: boolean;
+  isDrawing: boolean;
   onDismiss: () => void;
 }
 
-const Instructions: React.FC<InstructionsProps> = ({ pointCount, isEditing, onDismiss }) => {
+const Instructions: React.FC<InstructionsProps> = ({ pointCount, isEditing, isDrawing, onDismiss }) => {
   const getInstructionText = () => {
     if (isEditing) {
       return 'Edit Mode: Drag points to adjust their position. Tap point markers to select/deselect them. Use control buttons below to add or remove points.';
+    }
+    
+    if (isDrawing) {
+      if (pointCount === 0) {
+        return 'Drawing Mode: Drag your finger to draw measurement points continuously. Start from any corner and trace the roof outline.';
+      } else {
+        return `Drawing Mode: Continue tracing the roof outline. ${pointCount} points drawn. Drag to add more points or complete the shape.`;
+      }
     }
     
     if (pointCount === 0) {
@@ -160,6 +170,7 @@ const Instructions: React.FC<InstructionsProps> = ({ pointCount, isEditing, onDi
 
   const getInstructionTitle = () => {
     if (isEditing) return 'Edit Points';
+    if (isDrawing) return 'Draw Mode';
     if (pointCount === 0) return 'Start Measuring';
     if (pointCount < 3) return 'Mark Corners';
     return 'Shape Complete';
@@ -167,6 +178,7 @@ const Instructions: React.FC<InstructionsProps> = ({ pointCount, isEditing, onDi
 
   const getInstructionIcon = () => {
     if (isEditing) return '✏️';
+    if (isDrawing) return '🖊️';
     if (pointCount === 0) return '📍';
     if (pointCount < 3) return '🔄';
     return '✅';
@@ -258,8 +270,53 @@ export default function ManualPointSelectionCamera() {
   // Point selection state
   const [selectedPoints, setSelectedPoints] = useState<SelectedPoint[]>([]);
   const [isEditing, setIsEditing] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
   const [selectedPointIndex, setSelectedPointIndex] = useState<number | null>(null);
   const [showInstructions, setShowInstructions] = useState(true);
+
+  // Drawing state
+  const [isCurrentlyDrawing, setIsCurrentlyDrawing] = useState(false);
+  const lastPointRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  // Create pan responder for drawing mode
+  const drawingPanResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return isDrawing && !isEditing && Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
+      },
+      onPanResponderGrant: (evt) => {
+        if (!isDrawing || isEditing) return;
+        setIsCurrentlyDrawing(true);
+        const { locationX, locationY } = evt.nativeEvent;
+        addPointAtLocation(locationX, locationY);
+        Vibration.vibrate(30);
+        lastPointRef.current = { x: locationX, y: locationY, time: Date.now() };
+      },
+      onPanResponderMove: (evt) => {
+        if (!isCurrentlyDrawing || !isDrawing || isEditing) return;
+        const { locationX, locationY } = evt.nativeEvent;
+        const lastPoint = lastPointRef.current;
+        
+        if (lastPoint) {
+          const dx = locationX - lastPoint.x;
+          const dy = locationY - lastPoint.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const timeDiff = Date.now() - lastPoint.time;
+          
+          // Add point if moved enough distance or enough time passed
+          if (distance > 20 || timeDiff > 100) {
+            addPointAtLocation(locationX, locationY);
+            lastPointRef.current = { x: locationX, y: locationY, time: Date.now() };
+          }
+        }
+      },
+      onPanResponderRelease: () => {
+        setIsCurrentlyDrawing(false);
+        lastPointRef.current = null;
+        Vibration.vibrate(50);
+      },
+    })
+  ).current;
 
   // Initialize with existing points if provided
   useEffect(() => {
@@ -275,20 +332,18 @@ export default function ManualPointSelectionCamera() {
   }, [existingPoints]);
 
   /**
-   * Handle camera tap to add new point
+   * Add point at specific screen location
    */
-  const handleCameraTap = useCallback((event: any) => {
-    if (isEditing || !cameraReady) return;
+  const addPointAtLocation = useCallback((locationX: number, locationY: number) => {
+    if (!cameraReady) return;
 
-    const { locationX, locationY } = event.nativeEvent;
-    
     // Convert screen coordinates to world coordinates (simplified)
     const worldX = (locationX - screenWidth / 2) / 100; // Scale factor
     const worldY = 0; // Assume ground level for manual measurement
     const worldZ = (locationY - screenHeight / 2) / 100;
 
     const newPoint: SelectedPoint = {
-      id: `point_${Date.now()}`,
+      id: `point_${Date.now()}_${Math.random()}`,
       x: worldX,
       y: worldY,
       z: worldZ,
@@ -300,10 +355,20 @@ export default function ManualPointSelectionCamera() {
     };
 
     setSelectedPoints(prev => [...prev, newPoint]);
+  }, [cameraReady]);
+
+  /**
+   * Handle camera tap to add new point
+   */
+  const handleCameraTap = useCallback((event: any) => {
+    if (isEditing || !cameraReady || isDrawing) return;
+
+    const { locationX, locationY } = event.nativeEvent;
+    addPointAtLocation(locationX, locationY);
     
     // Haptic feedback
     Vibration.vibrate(50);
-  }, [isEditing, cameraReady]);
+  }, [isEditing, cameraReady, isDrawing, addPointAtLocation]);
 
   /**
    * Handle point selection for editing
@@ -554,12 +619,13 @@ export default function ManualPointSelectionCamera() {
         />
         
         {/* Overlay */}
-        <View style={styles.overlay}>
+        <View style={styles.overlay} {...(isDrawing ? drawingPanResponder.panHandlers : {})}>
           {/* Instructions */}
           {showInstructions && (
             <Instructions
               pointCount={selectedPoints.length}
               isEditing={isEditing}
+              isDrawing={isDrawing}
               onDismiss={() => setShowInstructions(false)}
             />
           )}
@@ -590,37 +656,73 @@ export default function ManualPointSelectionCamera() {
 
           {/* Status overlay with enhanced feedback */}
           <View style={styles.statusOverlay}>
-            <Text style={styles.statusText}>Surface: {surfaceType}</Text>
-            <Text style={styles.statusText}>Points: {selectedPoints.length}</Text>
-            {selectedPoints.length >= 3 && (
-              <>
-                <Text style={styles.statusText}>
-                  Area: {calculatePreviewArea().toFixed(2)} m² ({(calculatePreviewArea() * 10.764).toFixed(0)} sq ft)
-                </Text>
-                <Text style={styles.statusText}>
-                  Perimeter: {calculatePreviewPerimeter().toFixed(1)} m
-                </Text>
-                {(() => {
-                  const validation = validateCurrentShape();
-                  return (
-                    <Text style={[
-                      styles.statusText,
-                      validation.isValid ? styles.statusSuccess : styles.statusWarning
-                    ]}>
-                      {validation.message}
-                    </Text>
-                  );
-                })()}
-              </>
-            )}
-            {selectedPoints.length > 0 && selectedPoints.length < 3 && (
-              <Text style={styles.statusWarning}>
-                Need {3 - selectedPoints.length} more points
+            <View style={styles.statusHeader}>
+              <Text style={styles.statusTitle}>Roof Measurement</Text>
+              <Text style={styles.statusMode}>
+                {isDrawing ? '🖊️ Draw Mode' : isEditing ? '✏️ Edit Mode' : '📍 Tap Mode'}
               </Text>
+            </View>
+            
+            <View style={styles.statusGrid}>
+              <View style={styles.statusItem}>
+                <Text style={styles.statusLabel}>Surface</Text>
+                <Text style={styles.statusValue}>{surfaceType}</Text>
+              </View>
+              <View style={styles.statusItem}>
+                <Text style={styles.statusLabel}>Points</Text>
+                <Text style={styles.statusValue}>{selectedPoints.length}</Text>
+              </View>
+            </View>
+
+            {selectedPoints.length >= 3 && (
+              <View style={styles.statusGrid}>
+                <View style={styles.statusItem}>
+                  <Text style={styles.statusLabel}>Area</Text>
+                  <Text style={styles.statusValue}>
+                    {calculatePreviewArea().toFixed(2)} m²
+                  </Text>
+                  <Text style={styles.statusSecondary}>
+                    ({(calculatePreviewArea() * 10.764).toFixed(0)} sq ft)
+                  </Text>
+                </View>
+                <View style={styles.statusItem}>
+                  <Text style={styles.statusLabel}>Perimeter</Text>
+                  <Text style={styles.statusValue}>
+                    {calculatePreviewPerimeter().toFixed(1)} m
+                  </Text>
+                </View>
+              </View>
             )}
-            {selectedPoints.length === 0 && (
-              <Text style={styles.statusHint}>
-                Tap to place your first point
+
+            {(() => {
+              if (selectedPoints.length >= 3) {
+                const validation = validateCurrentShape();
+                return (
+                  <Text style={[
+                    styles.statusFeedback,
+                    validation.isValid ? styles.statusSuccess : styles.statusWarning
+                  ]}>
+                    {validation.message}
+                  </Text>
+                );
+              } else if (selectedPoints.length > 0) {
+                return (
+                  <Text style={styles.statusFeedback}>
+                    Need {3 - selectedPoints.length} more points to complete shape
+                  </Text>
+                );
+              } else {
+                return (
+                  <Text style={styles.statusHint}>
+                    {isDrawing ? 'Drag to draw measurement points' : 'Tap to place your first point'}
+                  </Text>
+                );
+              }
+            })()}
+
+            {isCurrentlyDrawing && (
+              <Text style={styles.drawingIndicator}>
+                ✏️ Drawing...
               </Text>
             )}
           </View>
@@ -629,35 +731,33 @@ export default function ManualPointSelectionCamera() {
 
       {/* Control Panel */}
       <View style={styles.controlPanel}>
-        {/* Top row - editing controls */}
+        {/* Top row - mode controls */}
         <View style={styles.controlRow}>
           <TouchableOpacity
+            style={[styles.controlButton, isDrawing && styles.controlButtonActive]}
+            onPress={() => {
+              setIsDrawing(!isDrawing);
+              setIsEditing(false);
+              setIsCurrentlyDrawing(false);
+            }}
+          >
+            <Text style={styles.controlButtonText}>
+              {isDrawing ? 'Stop Drawing' : 'Draw Mode'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.controlButton, isEditing && styles.controlButtonActive]}
-            onPress={() => setIsEditing(!isEditing)}
+            onPress={() => {
+              setIsEditing(!isEditing);
+              setIsDrawing(false);
+            }}
             disabled={selectedPoints.length === 0}
           >
             <Text style={styles.controlButtonText}>
               {isEditing ? 'Stop Editing' : 'Edit Points'}
             </Text>
           </TouchableOpacity>
-
-          {isEditing && selectedPointIndex !== null && (
-            <>
-              <TouchableOpacity
-                style={[styles.controlButton, styles.insertButton]}
-                onPress={() => insertPointBetween(selectedPointIndex)}
-              >
-                <Text style={styles.controlButtonText}>Insert Point</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.controlButton, styles.removeButton]}
-                onPress={removeSelectedPoint}
-              >
-                <Text style={styles.controlButtonText}>Remove Point</Text>
-              </TouchableOpacity>
-            </>
-          )}
 
           <TouchableOpacity
             style={[styles.controlButton, styles.clearButton]}
@@ -667,6 +767,25 @@ export default function ManualPointSelectionCamera() {
             <Text style={styles.controlButtonText}>Clear All</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Second row - editing controls */}
+        {isEditing && selectedPointIndex !== null && (
+          <View style={styles.controlRow}>
+            <TouchableOpacity
+              style={[styles.controlButton, styles.insertButton]}
+              onPress={() => insertPointBetween(selectedPointIndex)}
+            >
+              <Text style={styles.controlButtonText}>Insert Point</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.controlButton, styles.removeButton]}
+              onPress={removeSelectedPoint}
+            >
+              <Text style={styles.controlButtonText}>Remove Point</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Bottom row - main actions */}
         <View style={styles.controlRow}>
@@ -856,11 +975,78 @@ const styles = StyleSheet.create({
   },
   statusOverlay: {
     position: 'absolute',
-    bottom: 200,
+    bottom: 20,
     left: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    padding: 12,
-    borderRadius: 8,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  statusHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  statusTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  statusMode: {
+    color: '#2196F3',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  statusGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  statusItem: {
+    flex: 1,
+    marginRight: 16,
+  },
+  statusLabel: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 12,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  statusValue: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  statusSecondary: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 10,
+  },
+  statusFeedback: {
+    color: '#FF9800',
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  drawingIndicator: {
+    color: '#4CAF50',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 4,
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
   },
   statusText: {
     color: 'white',
@@ -886,9 +1072,13 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   controlPanel: {
+    position: 'absolute',
+    bottom: 120,
+    left: 0,
+    right: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.9)',
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
   controlRow: {
     flexDirection: 'row',
