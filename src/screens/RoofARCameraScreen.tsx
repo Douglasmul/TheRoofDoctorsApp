@@ -346,47 +346,6 @@ export default function RoofARCameraScreen() {
   }, [capturedPlanes, config.voiceGuidance, config.units, announceToAccessibility]);
 
   /**
-   * Enhanced camera ready handler with voice guidance
-   */
-  const onCameraReady = useCallback(() => {
-    setCameraReady(true);
-    console.log('Camera ready for AR measurement');
-    
-    // Initialize AR session
-    initializeARSession();
-    
-    if (config.voiceGuidance) {
-      announceToAccessibility('Camera ready. Point device at roof surface to begin measurement.');
-    }
-    
-    if (config.hapticFeedback) {
-      Vibration.vibrate(50);
-    }
-  }, [initializeARSession, config.voiceGuidance, config.hapticFeedback, announceToAccessibility]);
-
-  /**
-   * Request camera permissions  
-   * Dependencies: stable requestPermission callback
-   */
-  const requestPermissions = useCallback(async () => {
-    try {
-      const result = await requestPermission();
-      if (!result?.granted) {
-        Alert.alert(
-          'Camera Permission Required',
-          'This app needs camera access to measure roofs using AR technology.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', style: 'default', onPress: () => {} }, // TODO: Open settings
-          ]
-        );
-      }
-    } catch (error) {
-      console.error('Error requesting camera permissions:', error);
-    }
-  }, [requestPermission]);
-
-  /**
    * Initialize AR session
    * Dependencies: specific methods instead of entire hook objects to avoid instability
    */
@@ -420,6 +379,25 @@ export default function RoofARCameraScreen() {
       ]);
     }
   }, [arPlaneDetection.startDetection, pitchSensor.startMeasuring, config.voiceGuidance, config.hapticFeedback, announceToAccessibility]);
+
+  /**
+   * Enhanced camera ready handler with voice guidance
+   */
+  const onCameraReady = useCallback(() => {
+    setCameraReady(true);
+    console.log('Camera ready for AR measurement');
+    
+    // Initialize AR session
+    initializeARSession();
+    
+    if (config.voiceGuidance) {
+      announceToAccessibility('Camera ready. Point device at roof surface to begin measurement.');
+    }
+    
+    if (config.hapticFeedback) {
+      Vibration.vibrate(50);
+    }
+  }, [initializeARSession, config.voiceGuidance, config.hapticFeedback, announceToAccessibility]);
 
   /**
    * Handle plane detection updates
@@ -610,6 +588,28 @@ export default function RoofARCameraScreen() {
     // If validation passed, proceed with measurement
     await proceedWithMeasurement();
   }, [capturedPlanes, validateCapturedPlanes]);
+
+  /**
+   * Request camera permissions  
+   * Dependencies: stable requestPermission callback
+   */
+  const requestPermissions = useCallback(async () => {
+    try {
+      const result = await requestPermission();
+      if (!result?.granted) {
+        Alert.alert(
+          'Camera Permission Required',
+          'This app needs camera access to measure roofs using AR technology.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', style: 'default', onPress: () => {} }, // TODO: Open settings
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error requesting camera permissions:', error);
+    }
+  }, [requestPermission]);
 
   /**
    * Proceed with measurement calculation after validation

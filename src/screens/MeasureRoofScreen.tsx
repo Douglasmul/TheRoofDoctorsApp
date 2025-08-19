@@ -11,6 +11,10 @@ export default function MeasureRoofScreen() {
     navigation.navigate('RoofARCamera');
   };
 
+  const startManualMeasurement = () => {
+    navigation.navigate('ManualMeasurement');
+  };
+
   if (!permission) {
     return (
       <View style={styles.container}>
@@ -50,10 +54,10 @@ export default function MeasureRoofScreen() {
       <View style={styles.optionContainer}>
         <Text style={styles.optionTitle}>Traditional Measurement</Text>
         <Text style={styles.optionDescription}>
-          Basic camera measurement for simple roof layouts (coming soon).
+          Manual point selection for measuring roof sections. Touch to select points and measure any roof surface manually.
         </Text>
-        <TouchableOpacity style={styles.secondaryButton} disabled>
-          <Text style={styles.secondaryButtonText}>Coming Soon</Text>
+        <TouchableOpacity style={styles.primaryButton} onPress={startManualMeasurement}>
+          <Text style={styles.primaryButtonText}>Start Manual Measurement</Text>
         </TouchableOpacity>
       </View>
 

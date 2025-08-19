@@ -57,6 +57,12 @@ export interface MaterialCalculation {
   baseArea: number;
   /** Area with waste factor applied */
   adjustedArea: number;
+  /** Total area including waste */
+  totalArea?: number;
+  /** Waste percentage applied */
+  wastePercent?: number;
+  /** Dominant material type across all surfaces */
+  dominantMaterial?: string;
   /** Estimated material units needed */
   materialUnits: number;
   /** Material type specific calculations */

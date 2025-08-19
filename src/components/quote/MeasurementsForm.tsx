@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Quote } from '../../types/quote';
 import { RoofMeasurement, MaterialCalculation } from '../../types/measurement';
 import { FormField, FormSection, FormButton } from '../FormComponents';
@@ -23,11 +24,19 @@ interface Props {
  * Measurements and calculations form component
  */
 export default function MeasurementsForm({ quote, errors, onUpdateQuote, onUpdateErrors }: Props) {
+  const navigation = useNavigation();
   const [isCalculating, setIsCalculating] = useState(false);
   const [measurementEngine] = useState(() => new RoofMeasurementEngine());
   
   const measurement = quote.measurement;
   const materialCalculation = quote.materialCalculation;
+
+  /**
+   * Start manual measurement workflow
+   */
+  const startManualMeasurement = () => {
+    navigation.navigate('ManualMeasurement');
+  };
 
   /**
    * Recalculate materials based on updated preferences
@@ -195,6 +204,21 @@ export default function MeasurementsForm({ quote, errors, onUpdateQuote, onUpdat
 
     return (
       <FormSection title="Manual Measurements">
+        <View style={styles.noMeasurementContainer}>
+          <Text style={styles.noMeasurementText}>
+            No roof measurement data available. Use our manual measurement tool or enter measurements manually.
+          </Text>
+        </View>
+        
+        <FormButton
+          title="Start Manual Measurement"
+          onPress={startManualMeasurement}
+          variant="primary"
+          style={styles.startMeasurementButton}
+        />
+        
+        <Text style={styles.orDividerText}>Or enter measurements manually:</Text>
+        
         <FormField
           label="Total Roof Area (sq ft)"
           value={manualMeasurements.totalArea}
@@ -319,5 +343,16 @@ const styles = StyleSheet.create({
   },
   recalculateButton: {
     marginTop: 16,
+  },
+  startMeasurementButton: {
+    marginVertical: 16,
+    backgroundColor: theme.colors.primary,
+  },
+  orDividerText: {
+    fontSize: 14,
+    color: theme.colors.text + '80',
+    textAlign: 'center',
+    marginVertical: 12,
+    fontStyle: 'italic',
   },
 });

@@ -8,6 +8,8 @@ import HomeScreen from '../screens/HomeScreen';
 import OpenAppScreen from '../screens/OpenApp';
 import MeasureRoofScreen from '../screens/MeasureRoofScreen';
 import RoofARCameraScreen from '../screens/RoofARCameraScreen';
+import ManualMeasurementScreen from '../screens/ManualMeasurementScreen';
+import ManualPointSelectionCamera from '../screens/ManualPointSelectionCamera';
 import MeasurementReviewScreen from '../screens/MeasurementReviewScreen';
 import SignupScreen from '../screens/SignupScreen';
 import LoginScreen from '../screens/LoginScreen';
@@ -51,6 +53,19 @@ export default function AppNavigator() {
           options={{ 
             title: 'AR Measurement',
             headerShown: false, // Hide header for immersive AR experience
+          }}
+        />
+        <Stack.Screen 
+          name="ManualMeasurement" 
+          component={ManualMeasurementScreen} 
+          options={{ title: 'Manual Measurement' }}
+        />
+        <Stack.Screen 
+          name="ManualPointSelection" 
+          component={ManualPointSelectionCamera} 
+          options={{ 
+            title: 'Select Points',
+            headerShown: false, // Hide header for full camera view
           }}
         />
         <Stack.Screen 

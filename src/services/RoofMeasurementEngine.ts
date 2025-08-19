@@ -543,7 +543,7 @@ export class RoofMeasurementEngine {
     }
 
     // Compliance checks
-    if (measurement.complianceStatus.status === 'failed') {
+    if (measurement.complianceStatus.status === 'non-compliant') {
       warnings.push('Measurement does not meet compliance standards');
     }
 
@@ -716,7 +716,7 @@ export class RoofMeasurementEngine {
    * Add audit trail entry
    */
   private async addAuditEntry(
-    action: string, 
+    action: 'create' | 'modify' | 'export' | 'sync' | 'view' | 'delete', 
     userId: string, 
     sessionId: string, 
     details: string
