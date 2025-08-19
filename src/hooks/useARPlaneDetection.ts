@@ -455,14 +455,52 @@ export function useARPlaneDetection(
     pitchAngle: number
   ): RoofPlane['type'] => {
     const area = calculatePolygonArea(boundaries);
+    const azimuthAngle = calculateAzimuthAngle(normal);
+    
+    // Helper function to check if surface is triangular (hip characteristic)
+    const isTriangularShape = (bounds: ARPoint[]): boolean => {
+      if (bounds.length <= 4) {
+        // Check if shape approximates triangle by analyzing angles
+        const angles = [];
+        for (let i = 0; i < bounds.length; i++) {
+          const prev = bounds[(i - 1 + bounds.length) % bounds.length];
+          const curr = bounds[i];
+          const next = bounds[(i + 1) % bounds.length];
+          
+          const angle1 = Math.atan2(prev.y - curr.y, prev.x - curr.x);
+          const angle2 = Math.atan2(next.y - curr.y, next.x - curr.x);
+          let diff = Math.abs(angle2 - angle1);
+          if (diff > Math.PI) diff = 2 * Math.PI - diff;
+          angles.push(diff);
+        }
+        
+        // If any angle is very acute (suggesting triangle), it might be a hip
+        return angles.some(angle => angle < Math.PI / 6); // Less than 30 degrees
+      }
+      return false;
+    };
     
     // Primary roof surface: large area, moderate pitch
     if (area > 25 && pitchAngle > 15 && pitchAngle < 60) {
       return 'primary';
     }
     
-    // Dormer: smaller to medium area, various pitches
-    if (area > 8 && area <= 25 && pitchAngle > 20) {
+    // Hip roof: medium to large area, triangular shape, similar pitch to primary
+    if (area > 15 && pitchAngle > 15 && pitchAngle < 60 && isTriangularShape(boundaries)) {
+      return 'hip';
+    }
+    
+    // Hip roof (alternate detection): medium area with specific orientation pattern
+    if (area > 10 && area <= 30 && pitchAngle > 20 && pitchAngle < 55) {
+      // Check if azimuth suggests angled roof section (common in hips)
+      const isAngledSection = (azimuthAngle % 90) > 20 && (azimuthAngle % 90) < 70;
+      if (isAngledSection) {
+        return 'hip';
+      }
+    }
+    
+    // Dormer: smaller to medium area, various pitches, not triangular
+    if (area > 8 && area <= 25 && pitchAngle > 20 && !isTriangularShape(boundaries)) {
       return 'dormer';
     }
     
@@ -482,7 +520,7 @@ export function useARPlaneDetection(
     }
     
     return 'other';
-  }, [calculatePolygonArea]);
+  }, [calculatePolygonArea, calculateAzimuthAngle]);
 
   /**
    * Basic material detection based on plane characteristics

@@ -98,6 +98,8 @@ export default function MeasurementReviewScreen() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({ state: 'idle', progress: 0 });
   const [exportModalVisible, setExportModalVisible] = useState(false);
   const [materialCalculation, setMaterialCalculation] = useState<MaterialCalculation | null>(null);
+  const [editingPlane, setEditingPlane] = useState<string | null>(null);
+  const [editedMeasurement, setEditedMeasurement] = useState<RoofMeasurement>(measurement);
   const [exportHistory, setExportHistory] = useState<ExportRecord[]>([]);
 
   // Services
@@ -681,6 +683,105 @@ export default function MeasurementReviewScreen() {
     return materials;
   };
 
+  /**
+   * Get surface type breakdown for enhanced summary
+   */
+  const getSurfaceTypeBreakdown = useCallback(() => {
+    if (!editedMeasurement || !editedMeasurement.planes) return [];
+    
+    const typeGroups = editedMeasurement.planes.reduce((acc, plane) => {
+      const type = plane.type;
+      if (!acc[type]) {
+        acc[type] = {
+          type,
+          count: 0,
+          totalArea: 0,
+          planes: []
+        };
+      }
+      acc[type].count++;
+      acc[type].totalArea += plane.area;
+      acc[type].planes.push(plane);
+      return acc;
+    }, {} as Record<string, { type: string; count: number; totalArea: number; planes: RoofPlane[] }>);
+    
+    return Object.values(typeGroups).map(group => ({
+      ...group,
+      averageArea: group.totalArea / group.count
+    })).sort((a, b) => b.totalArea - a.totalArea);
+  }, [editedMeasurement]);
+
+  /**
+   * Get color for surface type
+   */
+  const getSurfaceTypeColor = useCallback((type: string) => {
+    const colors = {
+      primary: '#4CAF50',
+      secondary: '#2196F3',
+      dormer: '#FF9800',
+      hip: '#E91E63',
+      chimney: '#9C27B0',
+      other: '#607D8B',
+    };
+    return colors[type as keyof typeof colors] || colors.other;
+  }, []);
+
+  /**
+   * Handle editing a plane's properties
+   */
+  const handleEditPlane = useCallback((planeId: string, updates: Partial<RoofPlane>) => {
+    setEditedMeasurement(prev => ({
+      ...prev,
+      planes: prev.planes.map(plane => 
+        plane.id === planeId ? { ...plane, ...updates } : plane
+      ),
+      // Recalculate totals
+      totalArea: prev.planes.reduce((sum, p) => 
+        sum + (p.id === planeId ? (updates.area ?? p.area) : p.area), 0),
+      totalProjectedArea: prev.planes.reduce((sum, p) => 
+        sum + (p.id === planeId ? (updates.projectedArea ?? p.projectedArea) : p.projectedArea), 0)
+    }));
+  }, []);
+
+  /**
+   * Validate plane measurements for uniqueness and accuracy
+   */
+  const validatePlaneMeasurements = useCallback(() => {
+    if (!editedMeasurement.planes) return { isValid: true, errors: [] };
+    
+    const errors: string[] = [];
+    const planes = editedMeasurement.planes;
+    
+    // Check for duplicate areas (potential issue)
+    const areas = planes.map(p => Math.round(p.area * 100)); // Round to avoid floating point issues
+    const duplicateAreas = areas.filter((area, index) => areas.indexOf(area) !== index);
+    if (duplicateAreas.length > 0) {
+      errors.push('Some surfaces have identical areas. Please verify measurements.');
+    }
+    
+    // Check for reasonable area values
+    planes.forEach((plane, index) => {
+      if (plane.area <= 0) {
+        errors.push(`Surface ${index + 1} has invalid area (${plane.area.toFixed(2)})`);
+      }
+      if (plane.area > 200) {
+        errors.push(`Surface ${index + 1} has unusually large area (${plane.area.toFixed(2)} m²)`);
+      }
+      if (plane.confidence < 0.3) {
+        errors.push(`Surface ${index + 1} has low confidence (${(plane.confidence * 100).toFixed(1)}%)`);
+      }
+    });
+    
+    return { isValid: errors.length === 0, errors };
+  }, [editedMeasurement]);
+
+  // Update measurement when original changes
+  useEffect(() => {
+    if (measurement) {
+      setEditedMeasurement(measurement);
+    }
+  }, [measurement]);
+
   // Load material calculations on mount
   useEffect(() => {
     if (measurement) {
@@ -749,25 +850,126 @@ export default function MeasurementReviewScreen() {
               <Text style={styles.summaryValue}>{(measurement.accuracy * 100).toFixed(1)}%</Text>
             </View>
           </View>
+          
+          {/* Surface Type Breakdown */}
+          <View style={styles.breakdownSection}>
+            <Text style={styles.breakdownTitle}>Surface Type Breakdown</Text>
+            {getSurfaceTypeBreakdown().map((surfaceType, index) => (
+              <View key={index} style={styles.breakdownItem}>
+                <View style={styles.breakdownHeader}>
+                  <Text style={[styles.breakdownType, { color: getSurfaceTypeColor(surfaceType.type) }]}>
+                    {surfaceType.type.charAt(0).toUpperCase() + surfaceType.type.slice(1)}
+                  </Text>
+                  <Text style={styles.breakdownCount}>({surfaceType.count} surface{surfaceType.count !== 1 ? 's' : ''})</Text>
+                </View>
+                <Text style={styles.breakdownArea}>
+                  Total: {formatArea(surfaceType.totalArea)} | 
+                  Avg: {formatArea(surfaceType.averageArea)}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
 
         {/* Planes Detail Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Roof Surfaces</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Roof Surfaces</Text>
+            <TouchableOpacity
+              style={styles.validateButton}
+              onPress={() => {
+                const validation = validatePlaneMeasurements();
+                Alert.alert(
+                  validation.isValid ? 'Validation Passed' : 'Validation Issues',
+                  validation.isValid 
+                    ? 'All measurements are valid and unique.' 
+                    : validation.errors.join('\n'),
+                  [{ text: 'OK', style: 'default' }]
+                );
+              }}
+            >
+              <Text style={styles.validateButtonText}>Validate</Text>
+            </TouchableOpacity>
+          </View>
           
-          {measurement.planes.map((plane, index) => (
+          {editedMeasurement.planes.map((plane, index) => (
             <View key={plane.id} style={styles.planeCard}>
               <View style={styles.planeHeader}>
-                <Text style={styles.planeTitle}>Surface {index + 1}</Text>
-                <Text style={styles.planeType}>{plane.type}</Text>
+                <View style={styles.planeHeaderLeft}>
+                  <Text style={styles.planeTitle}>Surface {index + 1}</Text>
+                  <View style={[styles.planeTypeIndicator, { backgroundColor: getSurfaceTypeColor(plane.type) }]}>
+                    <Text style={styles.planeType}>{plane.type}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => setEditingPlane(editingPlane === plane.id ? null : plane.id)}
+                >
+                  <Text style={styles.editButtonText}>
+                    {editingPlane === plane.id ? 'Done' : 'Edit'}
+                  </Text>
+                </TouchableOpacity>
               </View>
               
-              <View style={styles.planeDetails}>
-                <Text style={styles.planeDetail}>Area: {formatArea(plane.area)}</Text>
-                <Text style={styles.planeDetail}>Pitch: {plane.pitchAngle.toFixed(1)}°</Text>
-                <Text style={styles.planeDetail}>Material: {plane.material || 'Unknown'}</Text>
-                <Text style={styles.planeDetail}>Confidence: {(plane.confidence * 100).toFixed(1)}%</Text>
-              </View>
+              {editingPlane === plane.id ? (
+                <View style={styles.editForm}>
+                  <View style={styles.editRow}>
+                    <Text style={styles.editLabel}>Type:</Text>
+                    <View style={styles.typeSelector}>
+                      {['primary', 'secondary', 'dormer', 'hip', 'chimney', 'other'].map(type => (
+                        <TouchableOpacity
+                          key={type}
+                          style={[
+                            styles.typeOption,
+                            plane.type === type && styles.typeOptionSelected
+                          ]}
+                          onPress={() => handleEditPlane(plane.id, { type: type as RoofPlane['type'] })}
+                        >
+                          <Text style={[
+                            styles.typeOptionText,
+                            plane.type === type && styles.typeOptionTextSelected
+                          ]}>
+                            {type}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                  
+                  <View style={styles.editRow}>
+                    <Text style={styles.editLabel}>Material:</Text>
+                    <View style={styles.materialSelector}>
+                      {['shingle', 'tile', 'metal', 'flat', 'unknown'].map(material => (
+                        <TouchableOpacity
+                          key={material}
+                          style={[
+                            styles.materialOption,
+                            (plane.material || 'unknown') === material && styles.materialOptionSelected
+                          ]}
+                          onPress={() => handleEditPlane(plane.id, { material: material as RoofPlane['material'] })}
+                        >
+                          <Text style={[
+                            styles.materialOptionText,
+                            (plane.material || 'unknown') === material && styles.materialOptionTextSelected
+                          ]}>
+                            {material}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.planeDetails}>
+                  <Text style={styles.planeDetail}>Area: {formatArea(plane.area)}</Text>
+                  <Text style={styles.planeDetail}>Projected: {formatArea(plane.projectedArea)}</Text>
+                  <Text style={styles.planeDetail}>Pitch: {plane.pitchAngle.toFixed(1)}°</Text>
+                  <Text style={styles.planeDetail}>Azimuth: {plane.azimuthAngle.toFixed(1)}°</Text>
+                  <Text style={styles.planeDetail}>Material: {plane.material || 'Unknown'}</Text>
+                  <Text style={styles.planeDetail}>Confidence: {(plane.confidence * 100).toFixed(1)}%</Text>
+                  <Text style={styles.planeDetail}>Boundary Points: {plane.boundaries.length}</Text>
+                </View>
+              )}
             </View>
           ))}
         </View>
