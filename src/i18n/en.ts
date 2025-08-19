@@ -49,6 +49,162 @@ export const en = {
     signup: 'Sign Up',
   },
 
+  // Authentication
+  auth: {
+    // Login
+    login: {
+      title: 'Welcome Back',
+      subtitle: 'Sign in to your account',
+      email: 'Email Address',
+      password: 'Password',
+      rememberMe: 'Remember me',
+      forgotPassword: 'Forgot your password?',
+      loginButton: 'Sign In',
+      noAccount: "Don't have an account?",
+      signupLink: 'Sign up here',
+      socialLogin: 'Or sign in with',
+      success: 'Welcome back!',
+      invalidCredentials: 'Invalid email or password',
+      accountLocked: 'Account temporarily locked due to too many failed attempts',
+      emailNotVerified: 'Please verify your email before signing in',
+    },
+
+    // Signup
+    signup: {
+      title: 'Create Account',
+      subtitle: 'Join The Roof Doctors',
+      firstName: 'First Name',
+      lastName: 'Last Name',
+      email: 'Email Address',
+      password: 'Password',
+      confirmPassword: 'Confirm Password',
+      agreeToTerms: 'I agree to the Terms of Service',
+      agreeToPrivacy: 'I agree to the Privacy Policy',
+      signupButton: 'Create Account',
+      haveAccount: 'Already have an account?',
+      loginLink: 'Sign in here',
+      socialSignup: 'Or sign up with',
+      success: 'Account created successfully!',
+      verificationSent: 'Verification email sent to {{email}}',
+      emailExists: 'An account with this email already exists',
+      weakPassword: 'Password does not meet security requirements',
+      termsRequired: 'You must agree to the Terms of Service and Privacy Policy',
+    },
+
+    // Password strength
+    passwordStrength: {
+      label: 'Password Strength',
+      veryWeak: 'Very Weak',
+      weak: 'Weak',
+      fair: 'Fair',
+      good: 'Good',
+      strong: 'Strong',
+      requirements: 'Password Requirements:',
+      minLength: 'At least 8 characters',
+      uppercase: 'One uppercase letter',
+      lowercase: 'One lowercase letter',
+      number: 'One number',
+      specialChar: 'One special character',
+      feedback: {
+        common: 'This password is too common',
+        sequential: 'Avoid sequential characters',
+        repeated: 'Avoid repeating characters',
+        excellent: 'Excellent! Very strong password',
+        good: 'Good! Strong password',
+      },
+    },
+
+    // Forgot password
+    forgotPassword: {
+      title: 'Reset Password',
+      subtitle: 'Enter your email to receive reset instructions',
+      email: 'Email Address',
+      sendButton: 'Send Reset Link',
+      backToLogin: 'Back to Login',
+      success: 'Reset instructions sent to {{email}}',
+      notFound: 'No account found with this email address',
+      rateLimited: 'Too many reset attempts. Please try again later.',
+    },
+
+    // Reset password
+    resetPassword: {
+      title: 'Set New Password',
+      subtitle: 'Choose a strong password for your account',
+      newPassword: 'New Password',
+      confirmPassword: 'Confirm New Password',
+      resetButton: 'Update Password',
+      success: 'Password updated successfully',
+      invalidToken: 'Invalid or expired reset link',
+      passwordMismatch: 'Passwords do not match',
+    },
+
+    // Email verification
+    emailVerification: {
+      title: 'Verify Your Email',
+      subtitle: 'We sent a verification link to {{email}}',
+      instructions: 'Click the link in the email to verify your account',
+      resendButton: 'Resend Verification Email',
+      changeEmail: 'Change Email Address',
+      checkSpam: 'Check your spam folder if you don\'t see the email',
+      success: 'Email verified successfully!',
+      invalidToken: 'Invalid or expired verification link',
+      alreadyVerified: 'Email is already verified',
+      resendSuccess: 'Verification email sent again',
+    },
+
+    // Social login
+    socialLogin: {
+      google: 'Continue with Google',
+      apple: 'Continue with Apple',
+      facebook: 'Continue with Facebook',
+      error: 'Social login failed. Please try again.',
+      cancelled: 'Social login was cancelled',
+      notAvailable: 'Social login is not available on this device',
+    },
+
+    // Errors
+    errors: {
+      required: 'This field is required',
+      invalidEmail: 'Please enter a valid email address',
+      invalidPassword: 'Password must meet security requirements',
+      passwordMismatch: 'Passwords do not match',
+      networkError: 'Network error. Please check your connection.',
+      serverError: 'Server error. Please try again later.',
+      unknownError: 'An unexpected error occurred',
+      sessionExpired: 'Your session has expired. Please sign in again.',
+      unauthorized: 'You are not authorized to perform this action',
+      rateLimited: 'Too many attempts. Please try again later.',
+      accountLocked: 'Account temporarily locked. Try again in {{minutes}} minutes.',
+      emailInUse: 'This email is already registered',
+      weakPassword: 'Password is too weak',
+      invalidToken: 'Invalid or expired token',
+      verificationRequired: 'Email verification required',
+    },
+
+    // Loading states
+    loading: {
+      signingIn: 'Signing in...',
+      signingUp: 'Creating account...',
+      sendingReset: 'Sending reset link...',
+      resettingPassword: 'Updating password...',
+      verifyingEmail: 'Verifying email...',
+      loggingOut: 'Signing out...',
+      socialLogin: 'Connecting...',
+    },
+
+    // Security
+    security: {
+      title: 'Security',
+      twoFactor: 'Two-Factor Authentication',
+      sessions: 'Active Sessions',
+      passwordLastChanged: 'Password last changed {{date}}',
+      changePassword: 'Change Password',
+      securityQuestions: 'Security Questions',
+      trustedDevices: 'Trusted Devices',
+      loginAlerts: 'Login Alerts',
+    },
+  },
+
   // AR Camera Screen
   arCamera: {
     title: 'AR Roof Measurement',
