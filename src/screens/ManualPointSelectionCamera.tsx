@@ -344,8 +344,8 @@ export default function ManualPointSelectionCamera() {
     const normalizedZ = (locationY - screenHeight / 2) / (screenHeight / 2);
     
     // Scale to realistic dimensions - adjust for zoom level
-    // Base scale represents ~10m x 10m area, zoom reduces effective area
-    const baseScale = 5; // 5 meters from center at 0% zoom
+    // Base scale represents realistic measurement area, zoom reduces effective area  
+    const baseScale = 8; // 8 meters from center at 0% zoom for better small feature resolution
     const zoomFactor = 1 - (zoom * 0.8); // Zoom reduces the effective area by up to 80%
     const effectiveScale = baseScale * zoomFactor;
     
@@ -399,7 +399,7 @@ export default function ManualPointSelectionCamera() {
         // Update both screen and world coordinates using consistent scaling
         const normalizedX = (screenX - screenWidth / 2) / (screenWidth / 2);
         const normalizedZ = (screenY - screenHeight / 2) / (screenHeight / 2);
-        const baseScale = 5;
+        const baseScale = 8;
         const zoomFactor = 1 - (zoom * 0.8);
         const effectiveScale = baseScale * zoomFactor;
         const worldX = normalizedX * effectiveScale;
@@ -542,8 +542,8 @@ export default function ManualPointSelectionCamera() {
     const calculatedArea = Math.abs(area) / 2;
     
     // Apply realistic scaling factor for roof measurements
-    // Assume each unit in screen space represents roughly 0.1 meters
-    const scaleFactor = 0.1; // More realistic scale factor
+    // Assume each unit in screen space represents roughly 1 meter
+    const scaleFactor = 1.0; // More realistic scale factor for actual roof measurements
     return calculatedArea * scaleFactor;
   }, [selectedPoints]);
 
@@ -567,7 +567,7 @@ export default function ManualPointSelectionCamera() {
     
     // Apply realistic scaling factor for roof measurements
     // Match the area calculation scale factor for consistency
-    const scaleFactor = 0.1; // Consistent with area calculation
+    const scaleFactor = 1.0; // Consistent with area calculation
     return perimeter * scaleFactor;
   }, [selectedPoints]);
 
@@ -579,9 +579,9 @@ export default function ManualPointSelectionCamera() {
       return { isValid: false, message: `Need ${3 - selectedPoints.length} more points` };
     }
 
-    // Check for very small area - Relaxed threshold for real-world measurements
+    // Check for very small area - Threshold adjusted for realistic scaling including small features
     const area = calculatePreviewArea();
-    if (area < 0.1) {
+    if (area < 0.5) {
       return { isValid: false, message: 'Area too small - spread points further apart' };
     }
 
