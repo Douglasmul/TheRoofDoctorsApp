@@ -898,6 +898,14 @@ export default function MeasurementReviewScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
+          style={[styles.actionButton, styles.quoteButton]}
+          onPress={() => navigation.navigate('Quote', { measurement })}
+          disabled={loading}
+        >
+          <Text style={styles.actionButtonText}>Create Quote</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={[styles.actionButton, styles.complianceButton]}
           onPress={generateComplianceReport}
           disabled={loading}
