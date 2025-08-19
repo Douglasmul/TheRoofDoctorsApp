@@ -20,6 +20,8 @@ export type RootStackParamList = {
   // Authentication Screens
   Login: undefined;
   Signup: undefined;
+  ForgotPassword: undefined;
+  EmailVerification: { email?: string; token?: string };
   
   // User Account Screens
   Profile: undefined;
