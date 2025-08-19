@@ -297,7 +297,16 @@ export default function ManualMeasurementScreen() {
       mode: 'selecting_type',
     }));
 
-    Alert.alert('Success', 'Surface saved successfully!');
+    // Enhanced success message with surface details
+    const area = completeSurface.area;
+    const perimeter = completeSurface.perimeter || 0;
+    const sqFt = (area * 10.764).toFixed(0);
+    
+    Alert.alert(
+      'Surface Saved',
+      `${SURFACE_TYPES.find(s => s.type === completeSurface.type)?.label || 'Surface'} saved successfully!\n\nArea: ${area.toFixed(2)} m² (${sqFt} sq ft)\nPerimeter: ${perimeter.toFixed(1)} m\nPoints: ${completeSurface.boundaries.length}`,
+      [{ text: 'OK' }]
+    );
   }, [session.currentSurface]);
 
   /**
@@ -317,8 +326,20 @@ export default function ManualMeasurementScreen() {
         'current_user' // TODO: Get from auth context
       );
 
-      // Navigate to review screen
-      navigation.navigate('MeasurementReview', { measurement, isManual: true });
+      // Generate comprehensive summary for user feedback
+      const summary = measurementEngine.current.generateMeasurementSummary(measurement);
+      
+      // Show success dialog with summary
+      Alert.alert(
+        'Measurement Complete',
+        `${summary.overview}\n\nProceed to review your measurement details and create a quote.`,
+        [
+          { text: 'OK', onPress: () => {
+            // Navigate to review screen
+            navigation.navigate('MeasurementReview', { measurement, isManual: true });
+          }}
+        ]
+      );
     } catch (error) {
       console.error('Error completing measurement:', error);
       Alert.alert('Error', 'Failed to complete measurement calculation.');

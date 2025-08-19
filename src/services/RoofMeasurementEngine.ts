@@ -781,6 +781,61 @@ export class RoofMeasurementEngine {
   }
 
   /**
+   * Generate comprehensive measurement summary for user feedback
+   */
+  public generateMeasurementSummary(measurement: RoofMeasurement): {
+    overview: string;
+    details: string[];
+    recommendations: string[];
+    warnings: string[];
+  } {
+    const totalPerimeter = measurement.planes.reduce((sum, plane) => sum + (plane.perimeter || 0), 0);
+    const avgConfidence = measurement.planes.reduce((sum, plane) => sum + plane.confidence, 0) / measurement.planes.length;
+    const surfaceTypes = [...new Set(measurement.planes.map(p => p.type))];
+    const materials = [...new Set(measurement.planes.map(p => p.material).filter(Boolean))];
+
+    const overview = `Measurement complete: ${measurement.planes.length} surfaces, ` +
+      `${this.roundToPrecision(measurement.totalArea)} m² total area, ` +
+      `${this.roundToPrecision(totalPerimeter)} m perimeter`;
+
+    const details = [
+      `Total area: ${this.roundToPrecision(measurement.totalArea)} m² (${this.convertToSquareFeet(measurement.totalArea).toFixed(0)} sq ft)`,
+      `Projected area: ${this.roundToPrecision(measurement.totalProjectedArea)} m² (${this.convertToSquareFeet(measurement.totalProjectedArea).toFixed(0)} sq ft)`,
+      `Total perimeter: ${this.roundToPrecision(totalPerimeter)} m (${this.convertToFeet(totalPerimeter).toFixed(0)} ft)`,
+      `Average confidence: ${(avgConfidence * 100).toFixed(1)}%`,
+      `Surface types: ${surfaceTypes.join(', ')}`,
+      ...(materials.length > 0 ? [`Materials detected: ${materials.join(', ')}`] : [])
+    ];
+
+    const recommendations = [];
+    const warnings = [];
+
+    // Quality-based recommendations
+    if (avgConfidence < 0.7) {
+      warnings.push('Low measurement confidence - consider remeasuring for better accuracy');
+    }
+
+    // Complexity-based recommendations
+    if (measurement.planes.length > 6) {
+      recommendations.push('Complex roof detected - extra care recommended during installation');
+    }
+
+    // Area-based checks
+    const avgPlaneArea = measurement.totalArea / measurement.planes.length;
+    if (avgPlaneArea < 5) {
+      recommendations.push('Small roof surfaces detected - plan material cuts carefully');
+    }
+
+    // Perimeter efficiency
+    const areaToPerimeterRatio = measurement.totalArea / totalPerimeter;
+    if (areaToPerimeterRatio < 1.5) {
+      recommendations.push('High perimeter-to-area ratio - additional edge materials may be needed');
+    }
+
+    return { overview, details, recommendations, warnings };
+  }
+
+  /**
    * Export measurement data in specified format
    */
   async exportMeasurement(measurement: RoofMeasurement, format: 'json' | 'csv' | 'pdf'): Promise<string> {
