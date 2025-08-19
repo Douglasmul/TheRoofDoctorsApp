@@ -32,10 +32,88 @@ export default function MeasurementsForm({ quote, errors, onUpdateQuote, onUpdat
   const materialCalculation = quote.materialCalculation;
 
   /**
-   * Start manual measurement workflow
+   * Start enhanced manual measurement workflow with quote context
    */
   const startManualMeasurement = () => {
-    navigation.navigate('ManualMeasurement');
+    // Pass quote context to manual measurement
+    navigation.navigate('ManualMeasurement', {
+      quoteId: quote.id,
+      propertyInfo: quote.property,
+      returnScreen: 'QuoteScreen',
+      mode: 'quote_integration'
+    });
+  };
+
+  /**
+   * Handle measurement data received from manual measurement
+   */
+  const handleMeasurementDataReceived = (measurementData: any) => {
+    try {
+      // Update quote with new measurement data
+      const updatedQuote: Partial<Quote> = {
+        measurement: measurementData.measurement,
+        materialCalculation: measurementData.materialCalculation,
+        isManualMeasurement: true,
+        measurementValidation: measurementData.validationResult,
+      };
+
+      onUpdateQuote(updatedQuote);
+      
+      // Clear measurement-related errors
+      const clearedErrors = { ...errors };
+      delete clearedErrors.measurement;
+      delete clearedErrors.area;
+      delete clearedErrors.materials;
+      onUpdateErrors(clearedErrors);
+
+      Alert.alert(
+        'Measurement Imported Successfully',
+        `Total area: ${measurementData.measurement.totalArea.toFixed(2)} m²\nQuality score: ${measurementData.validationResult.qualityScore}/100`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Error processing measurement data:', error);
+      Alert.alert('Import Error', 'Failed to import measurement data. Please try again.');
+    }
+  };
+
+  /**
+   * Validate measurement completeness for quote
+   */
+  const validateMeasurementForQuote = () => {
+    if (!measurement) {
+      return {
+        isValid: false,
+        message: 'No measurement data available. Please complete a roof measurement first.'
+      };
+    }
+
+    if (!measurement.planes || measurement.planes.length === 0) {
+      return {
+        isValid: false,
+        message: 'No roof surfaces measured. Please add at least one roof section.'
+      };
+    }
+
+    if (measurement.totalArea < 10) {
+      return {
+        isValid: false,
+        message: 'Measured area seems too small. Please verify your measurements.'
+      };
+    }
+
+    const qualityScore = quote.measurementValidation?.qualityScore || 0;
+    if (qualityScore < 60) {
+      return {
+        isValid: false,
+        message: `Measurement quality score is low (${qualityScore}/100). Consider remeasuring for better accuracy.`
+      };
+    }
+
+    return {
+      isValid: true,
+      message: 'Measurements are ready for quote generation.'
+    };
   };
 
   /**

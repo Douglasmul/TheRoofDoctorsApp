@@ -350,6 +350,7 @@ export class RoofMeasurementEngine {
     return {
       baseArea: this.roundToPrecision(baseArea),
       adjustedArea: this.roundToPrecision(finalArea),
+      totalArea: this.roundToPrecision(finalArea),
       wastePercent: this.config.wasteFactorPercent + (complexityFactor - 1) * 100,
       dominantMaterial,
       materialUnits: this.roundToPrecision(finalArea), // Basic estimate
@@ -534,6 +535,155 @@ export class RoofMeasurementEngine {
       qualityScore,
       recommendations,
     };
+  }
+
+  /**
+   * Enhanced validation specifically for manual measurements with actionable feedback
+   */
+  public async validateManualMeasurement(planes: RoofPlane[]): Promise<ValidationResult> {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    const recommendations: string[] = [];
+
+    if (planes.length === 0) {
+      errors.push('No roof surfaces measured');
+      recommendations.push('Start by measuring at least one roof surface');
+      recommendations.push('Tap "Measure New Surface" to begin');
+      return {
+        isValid: false,
+        errors,
+        warnings,
+        qualityScore: 0,
+        recommendations,
+      };
+    }
+
+    let totalConfidence = 0;
+    let validGeometryCount = 0;
+
+    for (const plane of planes) {
+      const planeLabel = this.getPlaneFriendlyName(plane);
+      
+      // Enhanced geometry validation with specific guidance
+      if (!this.isValidPlaneGeometry(plane)) {
+        if (plane.boundaries.length < 3) {
+          errors.push(`${planeLabel}: Needs at least 3 corner points`);
+          recommendations.push(`Add more corner points to ${planeLabel.toLowerCase()} by tapping on the roof edges`);
+        } else if (this.arePointsCollinear(plane.boundaries[0], plane.boundaries[1], plane.boundaries[2])) {
+          errors.push(`${planeLabel}: Points are in a straight line`);
+          recommendations.push(`Move points to form a proper roof shape - points should not be aligned in a straight line`);
+        } else if (this.isPolygonSelfIntersecting(plane.boundaries)) {
+          errors.push(`${planeLabel}: Lines cross over each other`);
+          recommendations.push(`Adjust points so the roof outline doesn't cross itself - follow the actual roof edge`);
+        } else {
+          errors.push(`${planeLabel}: Invalid shape detected`);
+          recommendations.push(`Check that points follow the actual roof perimeter`);
+        }
+      } else {
+        validGeometryCount++;
+      }
+
+      // Point density guidance
+      const perimeterToPointRatio = plane.perimeter / plane.boundaries.length;
+      if (perimeterToPointRatio > 5) {
+        warnings.push(`${planeLabel}: Consider adding more points for better accuracy`);
+        recommendations.push(`For complex roof shapes, add points at corners and edges every 3-5 meters`);
+      }
+
+      // Area reasonableness with contextual feedback
+      if (plane.area < 2) {
+        warnings.push(`${planeLabel}: Very small area (${plane.area.toFixed(1)} m²)`);
+        recommendations.push(`Verify this is a complete roof section - small areas may be measurement errors`);
+      } else if (plane.area > 500) {
+        warnings.push(`${planeLabel}: Large area (${plane.area.toFixed(0)} m²)`);
+        recommendations.push(`For large roof sections, consider breaking into smaller, more manageable areas`);
+      }
+
+      // Shape complexity analysis
+      const aspectRatio = this.calculateAspectRatio(plane.boundaries);
+      if (aspectRatio > 10) {
+        warnings.push(`${planeLabel}: Very narrow shape detected`);
+        recommendations.push(`Verify this represents the actual roof section - extremely narrow shapes may indicate measurement errors`);
+      }
+
+      totalConfidence += plane.confidence || 1.0;
+    }
+
+    // Overall measurement quality assessment
+    const avgConfidence = totalConfidence / planes.length;
+    const geometryValidityRatio = validGeometryCount / planes.length;
+    const totalArea = planes.reduce((sum, plane) => sum + plane.area, 0);
+    
+    // Quality score calculation with manual measurement considerations
+    const qualityScore = Math.round(
+      avgConfidence * 30 + 
+      geometryValidityRatio * 40 + 
+      (totalArea > 10 ? 20 : 10) + // Bonus for reasonable total area
+      (errors.length === 0 ? 10 : 0)
+    );
+
+    // Coverage analysis
+    if (totalArea < 30) {
+      warnings.push('Small total roof area measured');
+      recommendations.push('Ensure all major roof sections are included in the measurement');
+    }
+
+    // Multi-surface guidance
+    if (planes.length === 1 && totalArea > 100) {
+      recommendations.push('Consider measuring complex roof sections separately for better accuracy');
+    }
+
+    // Final validation guidance
+    if (errors.length > 0) {
+      recommendations.push('Review and fix the issues above before saving measurements');
+      recommendations.push('Use edit mode to adjust point positions or add/remove points');
+    } else if (warnings.length > 0) {
+      recommendations.push('Consider addressing warnings to improve measurement accuracy');
+    } else {
+      recommendations.push('Measurements look good! You can proceed to save or add more surfaces');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings,
+      qualityScore,
+      recommendations,
+    };
+  }
+
+  /**
+   * Get user-friendly name for roof plane
+   */
+  private getPlaneFriendlyName(plane: RoofPlane): string {
+    const typeNames = {
+      primary: 'Main Roof',
+      secondary: 'Secondary Roof', 
+      dormer: 'Dormer',
+      hip: 'Hip Section',
+      chimney: 'Chimney Area',
+      other: 'Other Section',
+      custom: 'Custom Section'
+    };
+    return typeNames[plane.type] || 'Roof Section';
+  }
+
+  /**
+   * Calculate aspect ratio of a polygon (length/width approximation)
+   */
+  private calculateAspectRatio(points: ARPoint[]): number {
+    if (points.length < 3) return 1;
+
+    // Find bounding box
+    const xs = points.map(p => p.x);
+    const ys = points.map(p => p.y);
+    const width = Math.max(...xs) - Math.min(...xs);
+    const height = Math.max(...ys) - Math.min(...ys);
+    
+    const maxDim = Math.max(width, height);
+    const minDim = Math.min(width, height);
+    
+    return minDim > 0 ? maxDim / minDim : 1;
   }
 
   /**
@@ -791,8 +941,8 @@ export class RoofMeasurementEngine {
   } {
     const totalPerimeter = measurement.planes.reduce((sum, plane) => sum + (plane.perimeter || 0), 0);
     const avgConfidence = measurement.planes.reduce((sum, plane) => sum + plane.confidence, 0) / measurement.planes.length;
-    const surfaceTypes = [...new Set(measurement.planes.map(p => p.type))];
-    const materials = [...new Set(measurement.planes.map(p => p.material).filter(Boolean))];
+    const surfaceTypes = Array.from(new Set(measurement.planes.map(p => p.type)));
+    const materials = Array.from(new Set(measurement.planes.map(p => p.material).filter(Boolean)));
 
     const overview = `Measurement complete: ${measurement.planes.length} surfaces, ` +
       `${this.roundToPrecision(measurement.totalArea)} m² total area, ` +

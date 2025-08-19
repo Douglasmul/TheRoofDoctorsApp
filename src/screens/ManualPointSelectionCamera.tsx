@@ -16,6 +16,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
+import Svg, { Line, Polygon } from 'react-native-svg';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ARPoint, RoofPlane } from '../types/measurement';
@@ -141,24 +142,102 @@ interface InstructionsProps {
 const Instructions: React.FC<InstructionsProps> = ({ pointCount, isEditing, onDismiss }) => {
   const getInstructionText = () => {
     if (isEditing) {
-      return 'Drag points to adjust their position. Tap "Save Points" when finished.';
+      return 'Edit Mode: Drag points to adjust their position. Tap point markers to select/deselect them. Use control buttons below to add or remove points.';
     }
     
     if (pointCount === 0) {
-      return 'Tap on the roof surface to mark corner points. Start with any corner and work around the perimeter.';
-    } else if (pointCount < 3) {
-      return `${pointCount} point${pointCount > 1 ? 's' : ''} selected. Continue tapping to mark corners (minimum 3 points required).`;
+      return 'Getting Started: Tap anywhere on the roof surface to mark your first corner point. Aim for a clear roof edge or corner for best accuracy.';
+    } else if (pointCount === 1) {
+      return 'Point 1 marked! Continue tapping to mark the next corner point. Work your way around the roof perimeter in order.';
+    } else if (pointCount === 2) {
+      return '2 points marked! Add at least 1 more point to form a complete roof section. Keep following the roof edge.';
+    } else if (pointCount < 6) {
+      return `${pointCount} points selected. You can add more corner points for complex shapes, or tap "Review Points" if the basic shape is complete.`;
     } else {
-      return `${pointCount} points selected. You can add more points or tap "Review Points" to continue.`;
+      return `${pointCount} points selected. Great detail! You can add more points for very complex shapes or proceed to review.`;
     }
+  };
+
+  const getInstructionTitle = () => {
+    if (isEditing) return 'Edit Points';
+    if (pointCount === 0) return 'Start Measuring';
+    if (pointCount < 3) return 'Mark Corners';
+    return 'Shape Complete';
+  };
+
+  const getInstructionIcon = () => {
+    if (isEditing) return '✏️';
+    if (pointCount === 0) return '📍';
+    if (pointCount < 3) return '🔄';
+    return '✅';
   };
 
   return (
     <View style={styles.instructions}>
+      <View style={styles.instructionHeader}>
+        <Text style={styles.instructionIcon}>{getInstructionIcon()}</Text>
+        <Text style={styles.instructionTitle}>{getInstructionTitle()}</Text>
+        <TouchableOpacity style={styles.dismissButton} onPress={onDismiss}>
+          <Text style={styles.dismissButtonText}>×</Text>
+        </TouchableOpacity>
+      </View>
       <Text style={styles.instructionText}>{getInstructionText()}</Text>
-      <TouchableOpacity style={styles.dismissButton} onPress={onDismiss}>
-        <Text style={styles.dismissButtonText}>×</Text>
-      </TouchableOpacity>
+      {pointCount >= 3 && !isEditing && (
+        <View style={styles.instructionTips}>
+          <Text style={styles.tipText}>💡 Tip: Add more points at roof edges for better accuracy</Text>
+        </View>
+      )}
+    </View>
+  );
+};
+
+/**
+ * Connection Lines Component - Shows visual lines connecting points
+ */
+interface ConnectionLinesProps {
+  points: SelectedPoint[];
+}
+
+const ConnectionLines: React.FC<ConnectionLinesProps> = ({ points }) => {
+  if (points.length < 2) return null;
+
+  // Create polygon path points
+  const polygonPoints = points.map(point => `${point.screenX},${point.screenY}`).join(' ');
+  
+  // Create individual line segments
+  const lines = [];
+  for (let i = 0; i < points.length; i++) {
+    const current = points[i];
+    const next = points[(i + 1) % points.length];
+    lines.push(
+      <Line
+        key={`line-${i}`}
+        x1={current.screenX}
+        y1={current.screenY}
+        x2={next.screenX}
+        y2={next.screenY}
+        stroke="rgba(76, 175, 80, 0.8)"
+        strokeWidth="2"
+        strokeDasharray={points.length >= 3 ? "0" : "5,5"}
+      />
+    );
+  }
+
+  return (
+    <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+      <Svg height="100%" width="100%" style={StyleSheet.absoluteFillObject}>
+        {/* Fill polygon if we have 3+ points */}
+        {points.length >= 3 && (
+          <Polygon
+            points={polygonPoints}
+            fill="rgba(76, 175, 80, 0.1)"
+            stroke="rgba(76, 175, 80, 0.8)"
+            strokeWidth="2"
+          />
+        )}
+        {/* Individual lines for incomplete polygons */}
+        {points.length < 3 && lines}
+      </Svg>
     </View>
   );
 };
@@ -366,23 +445,28 @@ export default function ManualPointSelectionCamera() {
   }, [selectedPoints, sessionId, surfaceType, navigation]);
 
   /**
-   * Calculate approximate area for preview
+   * Enhanced area calculation with improved accuracy
    */
   const calculatePreviewArea = useCallback(() => {
     if (selectedPoints.length < 3) return 0;
 
-    // Simple polygon area calculation using shoelace formula
+    // Use shoelace formula with proper coordinate selection
     let area = 0;
     for (let i = 0; i < selectedPoints.length; i++) {
       const j = (i + 1) % selectedPoints.length;
-      area += selectedPoints[i].x * selectedPoints[j].z;
-      area -= selectedPoints[j].x * selectedPoints[i].z;
+      // Use x and y coordinates for 2D projection
+      area += selectedPoints[i].x * selectedPoints[j].y;
+      area -= selectedPoints[j].x * selectedPoints[i].y;
     }
-    return Math.abs(area) / 2;
+    const calculatedArea = Math.abs(area) / 2;
+    
+    // Apply realistic scaling factor for roof measurements
+    const scaleFactor = 0.01; // Adjust this based on your coordinate system
+    return calculatedArea * scaleFactor;
   }, [selectedPoints]);
 
   /**
-   * Calculate approximate perimeter for preview
+   * Enhanced perimeter calculation with proper 3D distance
    */
   const calculatePreviewPerimeter = useCallback(() => {
     if (selectedPoints.length < 3) return 0;
@@ -393,10 +477,49 @@ export default function ManualPointSelectionCamera() {
       const dx = selectedPoints[j].x - selectedPoints[i].x;
       const dy = selectedPoints[j].y - selectedPoints[i].y;
       const dz = selectedPoints[j].z - selectedPoints[i].z;
-      perimeter += Math.sqrt(dx * dx + dy * dy + dz * dz);
+      
+      // Calculate 3D Euclidean distance
+      const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      perimeter += distance;
     }
-    return perimeter;
+    
+    // Apply realistic scaling factor for roof measurements
+    const scaleFactor = 0.1; // Adjust this based on your coordinate system
+    return perimeter * scaleFactor;
   }, [selectedPoints]);
+
+  /**
+   * Validate polygon shape with real-time feedback
+   */
+  const validateCurrentShape = useCallback(() => {
+    if (selectedPoints.length < 3) {
+      return { isValid: false, message: `Need ${3 - selectedPoints.length} more points` };
+    }
+
+    // Check for very small area
+    const area = calculatePreviewArea();
+    if (area < 0.5) {
+      return { isValid: false, message: 'Area too small - spread points further apart' };
+    }
+
+    // Check for reasonable aspect ratio
+    const bounds = {
+      minX: Math.min(...selectedPoints.map(p => p.x)),
+      maxX: Math.max(...selectedPoints.map(p => p.x)),
+      minY: Math.min(...selectedPoints.map(p => p.y)),
+      maxY: Math.max(...selectedPoints.map(p => p.y)),
+    };
+    
+    const width = bounds.maxX - bounds.minX;
+    const height = bounds.maxY - bounds.minY;
+    const aspectRatio = Math.max(width, height) / Math.min(width, height);
+    
+    if (aspectRatio > 15) {
+      return { isValid: false, message: 'Very narrow shape - check point placement' };
+    }
+
+    return { isValid: true, message: 'Shape looks good!' };
+  }, [selectedPoints, calculatePreviewArea]);
 
   // Permission handling
   if (!permission) {
@@ -456,10 +579,7 @@ export default function ManualPointSelectionCamera() {
 
           {/* Connection lines between points */}
           {selectedPoints.length > 1 && (
-            <View style={styles.connectionLines}>
-              {/* SVG or Canvas lines would go here for production */}
-              {/* For now, we'll skip the visual connections */}
-            </View>
+            <ConnectionLines points={selectedPoints} />
           )}
 
           {/* Crosshair */}
@@ -468,7 +588,7 @@ export default function ManualPointSelectionCamera() {
             <View style={styles.crosshairVertical} />
           </View>
 
-          {/* Status overlay */}
+          {/* Status overlay with enhanced feedback */}
           <View style={styles.statusOverlay}>
             <Text style={styles.statusText}>Surface: {surfaceType}</Text>
             <Text style={styles.statusText}>Points: {selectedPoints.length}</Text>
@@ -480,11 +600,27 @@ export default function ManualPointSelectionCamera() {
                 <Text style={styles.statusText}>
                   Perimeter: {calculatePreviewPerimeter().toFixed(1)} m
                 </Text>
+                {(() => {
+                  const validation = validateCurrentShape();
+                  return (
+                    <Text style={[
+                      styles.statusText,
+                      validation.isValid ? styles.statusSuccess : styles.statusWarning
+                    ]}>
+                      {validation.message}
+                    </Text>
+                  );
+                })()}
               </>
             )}
             {selectedPoints.length > 0 && selectedPoints.length < 3 && (
               <Text style={styles.statusWarning}>
                 Need {3 - selectedPoints.length} more points
+              </Text>
+            )}
+            {selectedPoints.length === 0 && (
+              <Text style={styles.statusHint}>
+                Tap to place your first point
               </Text>
             )}
           </View>
@@ -585,17 +721,45 @@ const styles = StyleSheet.create({
     top: 50,
     left: 20,
     right: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    padding: 15,
-    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  instructionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 8,
+  },
+  instructionIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  instructionTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    flex: 1,
   },
   instructionText: {
-    color: 'white',
+    color: 'rgba(255, 255, 255, 0.9)',
     fontSize: 14,
-    flex: 1,
-    lineHeight: 18,
+    lineHeight: 20,
+  },
+  instructionTips: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  tipText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 12,
+    fontStyle: 'italic',
   },
   dismissButton: {
     width: 30,
@@ -708,6 +872,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 2,
     fontWeight: 'bold',
+  },
+  statusSuccess: {
+    color: '#4CAF50',
+    fontSize: 12,
+    marginBottom: 2,
+    fontWeight: 'bold',
+  },
+  statusHint: {
+    color: '#2196F3',
+    fontSize: 12,
+    marginBottom: 2,
+    fontStyle: 'italic',
   },
   controlPanel: {
     backgroundColor: 'rgba(0, 0, 0, 0.9)',

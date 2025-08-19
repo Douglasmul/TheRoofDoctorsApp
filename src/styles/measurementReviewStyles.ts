@@ -491,4 +491,49 @@ export const measurementReviewStyles = StyleSheet.create({
   materialOptionTextSelected: {
     color: 'white',
   },
+  // Enhanced validation results styles
+  validationCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  validationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  validationStatus: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  validationSection: {
+    marginTop: 12,
+  },
+  validationSectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#234e70',
+    marginBottom: 6,
+  },
+  validationError: {
+    fontSize: 14,
+    color: '#F44336',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  validationWarning: {
+    fontSize: 14,
+    color: '#FF9800',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  validationRecommendation: {
+    fontSize: 14,
+    color: '#2196F3',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
 });

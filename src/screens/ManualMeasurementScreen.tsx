@@ -310,7 +310,7 @@ export default function ManualMeasurementScreen() {
   }, [session.currentSurface]);
 
   /**
-   * Complete measurement session
+   * Complete measurement and validate using enhanced validation
    */
   const completeMeasurement = useCallback(async () => {
     if (session.completedSurfaces.length === 0) {
@@ -319,6 +319,65 @@ export default function ManualMeasurementScreen() {
     }
 
     try {
+      // Use enhanced manual measurement validation
+      const validationResult = await measurementEngine.current.validateManualMeasurement(session.completedSurfaces);
+      
+      if (!validationResult.isValid) {
+        // Show detailed validation results with actionable feedback
+        const errorMessage = [
+          'Issues found:',
+          ...validationResult.errors.map(error => `• ${error}`),
+          '',
+          validationResult.warnings.length > 0 ? 'Warnings:' : '',
+          ...validationResult.warnings.map(warning => `• ${warning}`),
+          '',
+          'Recommendations:',
+          ...validationResult.recommendations.slice(0, 3).map(rec => `• ${rec}`)
+        ].filter(line => line !== '').join('\n');
+
+        Alert.alert(
+          'Measurement Validation Failed',
+          errorMessage,
+          [
+            { text: 'Fix Issues', style: 'default' },
+            { 
+              text: 'Save Anyway', 
+              style: 'destructive',
+              onPress: () => proceedWithSave(validationResult)
+            }
+          ]
+        );
+        return;
+      }
+
+      // Show validation success with quality score
+      const successMessage = [
+        `Quality Score: ${validationResult.qualityScore}/100`,
+        '',
+        'Ready to proceed!',
+        ...validationResult.recommendations.slice(0, 2).map(rec => `• ${rec}`)
+      ].filter(line => line !== '').join('\n');
+
+      Alert.alert(
+        'Measurements Validated ✓',
+        successMessage,
+        [
+          { text: 'Review', style: 'cancel' },
+          { text: 'Save & Continue', onPress: () => proceedWithSave(validationResult) }
+        ]
+      );
+
+    } catch (error) {
+      console.error('Validation error:', error);
+      Alert.alert('Validation Error', 'Unable to validate measurements. Please try again.');
+    }
+  }, [session.completedSurfaces]);
+
+  /**
+   * Proceed with saving measurements after validation
+   */
+  const proceedWithSave = useCallback(async (validationResult: any) => {
+    try {
       // Calculate final measurement using the measurement engine
       const measurement = await measurementEngine.current.calculateRoofMeasurement(
         session.completedSurfaces,
@@ -326,25 +385,21 @@ export default function ManualMeasurementScreen() {
         'current_user' // TODO: Get from auth context
       );
 
-      // Generate comprehensive summary for user feedback
-      const summary = measurementEngine.current.generateMeasurementSummary(measurement);
+      // Add validation results to measurement
+      measurement.validationResult = validationResult;
       
-      // Show success dialog with summary
-      Alert.alert(
-        'Measurement Complete',
-        `${summary.overview}\n\nProceed to review your measurement details and create a quote.`,
-        [
-          { text: 'OK', onPress: () => {
-            // Navigate to review screen
-            navigation.navigate('MeasurementReview', { measurement, isManual: true });
-          }}
-        ]
-      );
+      // Navigate to review screen with validation results
+      navigation.navigate('MeasurementReview', { 
+        measurement, 
+        isManual: true, 
+        validationResult 
+      });
+      
     } catch (error) {
-      console.error('Error completing measurement:', error);
-      Alert.alert('Error', 'Failed to complete measurement calculation.');
+      console.error('Save error:', error);
+      Alert.alert('Save Error', 'Failed to save measurements. Please try again.');
     }
-  }, [session.completedSurfaces, session.id, navigation]);
+  }, [session, navigation]);
 
   /**
    * Reset measurement session
