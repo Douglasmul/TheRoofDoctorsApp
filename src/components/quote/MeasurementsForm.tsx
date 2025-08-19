@@ -74,18 +74,31 @@ export default function MeasurementsForm({ quote, errors, onUpdateQuote, onUpdat
       );
     }
 
+    // Calculate total perimeter from all planes
+    const totalPerimeter = measurement.planes.reduce((sum, plane) => sum + (plane.perimeter || 0), 0);
+
     return (
       <View style={styles.measurementSummary}>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Total Roof Area:</Text>
-          <Text style={styles.summaryValue}>{measurement.totalArea.toFixed(2)} sq ft</Text>
+          <Text style={styles.summaryValue}>
+            {measurement.totalArea.toFixed(2)} m² ({(measurement.totalArea * 10.764).toFixed(0)} sq ft)
+          </Text>
         </View>
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Projected Area:</Text>
-          <Text style={styles.summaryValue}>{measurement.totalProjectedArea.toFixed(2)} sq ft</Text>
+          <Text style={styles.summaryValue}>
+            {measurement.totalProjectedArea.toFixed(2)} m² ({(measurement.totalProjectedArea * 10.764).toFixed(0)} sq ft)
+          </Text>
         </View>
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Number of Planes:</Text>
+          <Text style={styles.summaryLabel}>Total Perimeter:</Text>
+          <Text style={styles.summaryValue}>
+            {totalPerimeter.toFixed(1)} m ({(totalPerimeter * 3.281).toFixed(0)} ft)
+          </Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Number of Surfaces:</Text>
           <Text style={styles.summaryValue}>{measurement.planes.length}</Text>
         </View>
         <View style={styles.summaryRow}>

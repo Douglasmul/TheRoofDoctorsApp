@@ -194,6 +194,9 @@ export class RoofMeasurementEngine {
     // Recalculate area with higher precision
     const recalculatedArea = this.calculatePlaneArea(plane.boundaries);
     
+    // Calculate perimeter
+    const perimeter = this.calculatePlanePerimeter(plane.boundaries);
+    
     // Apply pitch correction
     const pitchCorrectedArea = this.applyPitchCorrection(recalculatedArea, plane.pitchAngle);
     
@@ -203,6 +206,7 @@ export class RoofMeasurementEngine {
     return {
       ...plane,
       area: this.roundToPrecision(recalculatedArea),
+      perimeter: this.roundToPrecision(perimeter),
       projectedArea: this.roundToPrecision(pitchCorrectedArea),
       material: enhancedMaterial,
     };
@@ -227,6 +231,38 @@ export class RoofMeasurementEngine {
     }
 
     return Math.abs(area) / 2;
+  }
+
+  /**
+   * Calculate perimeter of plane using boundary points
+   */
+  private calculatePlanePerimeter(boundaries: ARPoint[]): number {
+    if (boundaries.length < 3) {
+      throw new Error('Plane must have at least 3 boundary points');
+    }
+
+    let perimeter = 0;
+    const n = boundaries.length;
+
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const dx = boundaries[j].x - boundaries[i].x;
+      const dy = boundaries[j].y - boundaries[i].y;
+      const dz = boundaries[j].z - boundaries[i].z;
+      
+      // Calculate 3D distance between points
+      const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      perimeter += distance;
+    }
+
+    return perimeter;
+  }
+
+  /**
+   * Convert perimeter from meters to feet
+   */
+  public convertToFeet(lengthInMeters: number): number {
+    return lengthInMeters * 3.28084; // 1 meter = 3.28084 feet
   }
 
   /**
@@ -312,9 +348,8 @@ export class RoofMeasurementEngine {
     const costEstimate = await this.calculateCostEstimate(finalArea, dominantMaterial);
 
     return {
-      baseArea: this.roundToPrecision(totalArea),
+      baseArea: this.roundToPrecision(baseArea),
       adjustedArea: this.roundToPrecision(finalArea),
-      totalArea: this.roundToPrecision(finalArea),
       wastePercent: this.config.wasteFactorPercent + (complexityFactor - 1) * 100,
       dominantMaterial,
       materialUnits: this.roundToPrecision(finalArea), // Basic estimate
@@ -743,6 +778,61 @@ export class RoofMeasurementEngine {
   private roundToPrecision(value: number): number {
     const factor = Math.pow(10, this.config.areaPrecision);
     return Math.round(value * factor) / factor;
+  }
+
+  /**
+   * Generate comprehensive measurement summary for user feedback
+   */
+  public generateMeasurementSummary(measurement: RoofMeasurement): {
+    overview: string;
+    details: string[];
+    recommendations: string[];
+    warnings: string[];
+  } {
+    const totalPerimeter = measurement.planes.reduce((sum, plane) => sum + (plane.perimeter || 0), 0);
+    const avgConfidence = measurement.planes.reduce((sum, plane) => sum + plane.confidence, 0) / measurement.planes.length;
+    const surfaceTypes = [...new Set(measurement.planes.map(p => p.type))];
+    const materials = [...new Set(measurement.planes.map(p => p.material).filter(Boolean))];
+
+    const overview = `Measurement complete: ${measurement.planes.length} surfaces, ` +
+      `${this.roundToPrecision(measurement.totalArea)} m² total area, ` +
+      `${this.roundToPrecision(totalPerimeter)} m perimeter`;
+
+    const details = [
+      `Total area: ${this.roundToPrecision(measurement.totalArea)} m² (${this.convertToSquareFeet(measurement.totalArea).toFixed(0)} sq ft)`,
+      `Projected area: ${this.roundToPrecision(measurement.totalProjectedArea)} m² (${this.convertToSquareFeet(measurement.totalProjectedArea).toFixed(0)} sq ft)`,
+      `Total perimeter: ${this.roundToPrecision(totalPerimeter)} m (${this.convertToFeet(totalPerimeter).toFixed(0)} ft)`,
+      `Average confidence: ${(avgConfidence * 100).toFixed(1)}%`,
+      `Surface types: ${surfaceTypes.join(', ')}`,
+      ...(materials.length > 0 ? [`Materials detected: ${materials.join(', ')}`] : [])
+    ];
+
+    const recommendations = [];
+    const warnings = [];
+
+    // Quality-based recommendations
+    if (avgConfidence < 0.7) {
+      warnings.push('Low measurement confidence - consider remeasuring for better accuracy');
+    }
+
+    // Complexity-based recommendations
+    if (measurement.planes.length > 6) {
+      recommendations.push('Complex roof detected - extra care recommended during installation');
+    }
+
+    // Area-based checks
+    const avgPlaneArea = measurement.totalArea / measurement.planes.length;
+    if (avgPlaneArea < 5) {
+      recommendations.push('Small roof surfaces detected - plan material cuts carefully');
+    }
+
+    // Perimeter efficiency
+    const areaToPerimeterRatio = measurement.totalArea / totalPerimeter;
+    if (areaToPerimeterRatio < 1.5) {
+      recommendations.push('High perimeter-to-area ratio - additional edge materials may be needed');
+    }
+
+    return { overview, details, recommendations, warnings };
   }
 
   /**

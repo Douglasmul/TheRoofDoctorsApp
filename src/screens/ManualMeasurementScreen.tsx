@@ -39,6 +39,7 @@ const SURFACE_TYPES: Array<{ type: RoofPlane['type']; label: string; description
   { type: 'hip', label: 'Hip', description: 'Hip roof section', color: '#E91E63' },
   { type: 'chimney', label: 'Chimney', description: 'Around chimney area', color: '#9C27B0' },
   { type: 'other', label: 'Other', description: 'Other roof feature', color: '#607D8B' },
+  { type: 'custom', label: 'Custom Shape', description: 'Custom roof surface shape', color: '#795548' },
 ];
 
 /**
@@ -210,6 +211,7 @@ export default function ManualMeasurementScreen() {
         pitchAngle: 0,
         azimuthAngle: 0,
         area: 0,
+        perimeter: 0,
         projectedArea: 0,
         confidence: 1.0, // High confidence for manual measurements
       },
@@ -241,7 +243,23 @@ export default function ManualMeasurementScreen() {
       return Math.abs(area) / 2;
     };
 
+    // Calculate perimeter from points
+    const calculatePerimeter = (vertices: ARPoint[]) => {
+      if (vertices.length < 3) return 0;
+      
+      let perimeter = 0;
+      for (let i = 0; i < vertices.length; i++) {
+        const j = (i + 1) % vertices.length;
+        const dx = vertices[j].x - vertices[i].x;
+        const dy = vertices[j].y - vertices[i].y;
+        const dz = vertices[j].z - vertices[i].z;
+        perimeter += Math.sqrt(dx * dx + dy * dy + dz * dz);
+      }
+      return perimeter;
+    };
+
     const area = calculatePolygonArea(points);
+    const perimeter = calculatePerimeter(points);
     
     setSession(prev => ({
       ...prev,
@@ -251,6 +269,7 @@ export default function ManualMeasurementScreen() {
         ...prev.currentSurface,
         boundaries: points,
         area,
+        perimeter,
         projectedArea: area, // For manual measurements, assume no pitch correction needed initially
       } : null,
     }));
@@ -278,7 +297,16 @@ export default function ManualMeasurementScreen() {
       mode: 'selecting_type',
     }));
 
-    Alert.alert('Success', 'Surface saved successfully!');
+    // Enhanced success message with surface details
+    const area = completeSurface.area;
+    const perimeter = completeSurface.perimeter || 0;
+    const sqFt = (area * 10.764).toFixed(0);
+    
+    Alert.alert(
+      'Surface Saved',
+      `${SURFACE_TYPES.find(s => s.type === completeSurface.type)?.label || 'Surface'} saved successfully!\n\nArea: ${area.toFixed(2)} m² (${sqFt} sq ft)\nPerimeter: ${perimeter.toFixed(1)} m\nPoints: ${completeSurface.boundaries.length}`,
+      [{ text: 'OK' }]
+    );
   }, [session.currentSurface]);
 
   /**
@@ -298,8 +326,20 @@ export default function ManualMeasurementScreen() {
         'current_user' // TODO: Get from auth context
       );
 
-      // Navigate to review screen
-      navigation.navigate('MeasurementReview', { measurement, isManual: true });
+      // Generate comprehensive summary for user feedback
+      const summary = measurementEngine.current.generateMeasurementSummary(measurement);
+      
+      // Show success dialog with summary
+      Alert.alert(
+        'Measurement Complete',
+        `${summary.overview}\n\nProceed to review your measurement details and create a quote.`,
+        [
+          { text: 'OK', onPress: () => {
+            // Navigate to review screen
+            navigation.navigate('MeasurementReview', { measurement, isManual: true });
+          }}
+        ]
+      );
     } catch (error) {
       console.error('Error completing measurement:', error);
       Alert.alert('Error', 'Failed to complete measurement calculation.');
@@ -349,13 +389,25 @@ export default function ManualMeasurementScreen() {
         <View style={styles.progressStats}>
           <View style={styles.progressStat}>
             <Text style={styles.progressStatNumber}>{session.completedSurfaces.length}</Text>
-            <Text style={styles.progressStatLabel}>Surfaces Measured</Text>
+            <Text style={styles.progressStatLabel}>Surfaces</Text>
           </View>
           <View style={styles.progressStat}>
             <Text style={styles.progressStatNumber}>
               {session.completedSurfaces.reduce((sum, surface) => sum + surface.area, 0).toFixed(1)}
             </Text>
-            <Text style={styles.progressStatLabel}>Total Area (m²)</Text>
+            <Text style={styles.progressStatLabel}>Area (m²)</Text>
+          </View>
+          <View style={styles.progressStat}>
+            <Text style={styles.progressStatNumber}>
+              {(session.completedSurfaces.reduce((sum, surface) => sum + surface.area, 0) * 10.764).toFixed(0)}
+            </Text>
+            <Text style={styles.progressStatLabel}>Sq Ft</Text>
+          </View>
+          <View style={styles.progressStat}>
+            <Text style={styles.progressStatNumber}>
+              {session.completedSurfaces.reduce((sum, surface) => sum + (surface.perimeter || 0), 0).toFixed(1)}
+            </Text>
+            <Text style={styles.progressStatLabel}>Perimeter (m)</Text>
           </View>
         </View>
       </View>
@@ -379,7 +431,10 @@ export default function ManualMeasurementScreen() {
                     {surfaceInfo?.label || 'Unknown'} #{index + 1}
                   </Text>
                   <Text style={styles.surfaceItemDetails}>
-                    Area: {surface.area.toFixed(2)} m² • Points: {surface.boundaries.length}
+                    Area: {surface.area.toFixed(2)} m² ({(surface.area * 10.764).toFixed(0)} sq ft)
+                  </Text>
+                  <Text style={styles.surfaceItemDetails}>
+                    Perimeter: {(surface.perimeter || 0).toFixed(1)} m • Points: {surface.boundaries.length}
                   </Text>
                   {surface.material && surface.material !== 'unknown' && (
                     <Text style={styles.surfaceItemMaterial}>

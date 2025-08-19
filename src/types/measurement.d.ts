@@ -39,10 +39,12 @@ export interface RoofPlane {
   azimuthAngle: number;
   /** Calculated area in square meters */
   area: number;
+  /** Perimeter in meters */
+  perimeter: number;
   /** Pitch-corrected projected area */
   projectedArea: number;
   /** Plane type classification */
-  type: 'primary' | 'secondary' | 'dormer' | 'hip' | 'chimney' | 'other';
+  type: 'primary' | 'secondary' | 'dormer' | 'hip' | 'chimney' | 'other' | 'custom';
   /** Confidence in plane detection */
   confidence: number;
   /** Material classification if detected */
