@@ -14,7 +14,7 @@ const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-
 /**
  * Phone number validation regex - supports multiple formats
  */
-const PHONE_REGEX = /^[\+]?[1-9][\d]{0,15}$/;
+const PHONE_REGEX = /^[\+]?[1-9][\d]{3,15}$/;
 
 /**
  * Strong password requirements
@@ -230,8 +230,8 @@ export function validateName(name: string): boolean {
     return false;
   }
   
-  // Allow letters, spaces, hyphens, apostrophes
-  return /^[a-zA-Z\s\-']+$/.test(trimmed);
+  // Allow letters, spaces, hyphens, apostrophes, and common international characters
+  return /^[a-zA-ZÀ-ÿĀ-žА-я\s\-']+$/.test(trimmed);
 }
 
 /**
