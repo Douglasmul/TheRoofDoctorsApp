@@ -409,8 +409,9 @@ export class RoofMeasurementEngine {
   }
   /**
    * Validate array of planes with comprehensive checks
+   * Public method to allow pre-validation before calculation
    */
-  private async validatePlanes(planes: RoofPlane[]): Promise<ValidationResult> {
+  public async validatePlanes(planes: RoofPlane[]): Promise<ValidationResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
     const recommendations: string[] = [];

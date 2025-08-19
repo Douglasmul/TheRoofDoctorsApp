@@ -493,6 +493,26 @@ export default function RoofARCameraScreen() {
   }, [cameraReady, session.state, session.points.length, pitchSensor.state.measurement, config.voiceGuidance, config.hapticFeedback, announceToAccessibility]);
 
   /**
+   * Validate captured planes before measurement calculation
+   */
+  const validateCapturedPlanes = useCallback(async () => {
+    try {
+      // Use the measurement engine's validation method
+      const validation = await measurementEngine.current.validatePlanes(capturedPlanes);
+      return validation;
+    } catch (error) {
+      console.error('Error validating planes:', error);
+      return {
+        isValid: false,
+        errors: ['Failed to validate roof geometry'],
+        warnings: [],
+        qualityScore: 0,
+        recommendations: ['Try capturing the roof surfaces again with better lighting']
+      };
+    }
+  }, [capturedPlanes]);
+
+  /**
    * Complete measurement session
    * Dependencies: specific values and stable methods instead of unstable objects
    */
@@ -504,6 +524,41 @@ export default function RoofARCameraScreen() {
       return;
     }
 
+    // Pre-validate geometry before attempting calculation
+    const validation = await validateCapturedPlanes();
+    
+    if (!validation.isValid) {
+      const errorMessage = validation.errors.length > 0 
+        ? validation.errors.join('\n• ')
+        : 'Unknown validation error';
+      
+      const recommendations = validation.recommendations.length > 0
+        ? '\n\nSuggestions:\n• ' + validation.recommendations.join('\n• ')
+        : '';
+
+      Alert.alert(
+        'Measurement Validation Failed', 
+        `The captured roof geometry has issues:\n\n• ${errorMessage}${recommendations}`,
+        [
+          { text: 'Try Again', style: 'default' },
+          { 
+            text: 'Continue Anyway', 
+            style: 'destructive',
+            onPress: () => proceedWithMeasurement()
+          }
+        ]
+      );
+      return;
+    }
+
+    // If validation passed, proceed with measurement
+    await proceedWithMeasurement();
+  }, [capturedPlanes, validateCapturedPlanes]);
+
+  /**
+   * Proceed with measurement calculation after validation
+   */
+  const proceedWithMeasurement = useCallback(async () => {
     try {
       setSession(prev => ({ ...prev, state: 'complete' }));
 
@@ -528,7 +583,25 @@ export default function RoofARCameraScreen() {
 
     } catch (error) {
       console.error('Error completing measurement:', error);
-      Alert.alert('Calculation Error', 'Failed to calculate roof measurements.', [
+      
+      // Enhanced error handling with specific error messages
+      let errorTitle = 'Calculation Error';
+      let errorMessage = 'Failed to calculate roof measurements.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid geometry')) {
+          errorTitle = 'Geometry Validation Error';
+          errorMessage = 'The roof surfaces have invalid geometry. Please ensure:\n\n• Each surface has at least 3 boundary points\n• Points form a valid shape (not self-intersecting)\n• Surface area is reasonable (not too small or large)\n\nTry recapturing the roof surfaces with more stable device movement.';
+        } else if (error.message.includes('insufficient boundary points')) {
+          errorTitle = 'Insufficient Data';
+          errorMessage = 'Some roof surfaces don\'t have enough boundary points for accurate measurement. Please:\n\n• Move closer to the roof surface\n• Ensure good lighting conditions\n• Capture more points around the roof edges\n• Keep the device stable while capturing';
+        } else if (error.message.includes('Invalid planes')) {
+          errorTitle = 'Plane Detection Error';
+          errorMessage = 'Issues were detected with the captured roof surfaces:\n\n' + error.message.replace('Invalid planes: ', '• ') + '\n\nPlease recapture the roof surfaces with better conditions.';
+        }
+      }
+      
+      Alert.alert(errorTitle, errorMessage, [
         { text: 'OK', style: 'default' }
       ]);
     }
@@ -641,14 +714,14 @@ export default function RoofARCameraScreen() {
           {/* Enhanced Status Display */}
           <View style={styles.statusOverlay}>
             <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Status: </Text>
+              <Text style={styles.statusRowLabel}>Status: </Text>
               <Text style={[styles.statusValue, getStatusColor(session.state)]}>
                 {getStatusText(session.state)}
               </Text>
             </View>
             
             <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Progress: </Text>
+              <Text style={styles.statusRowLabel}>Progress: </Text>
               <View style={styles.progressContainer}>
                 <View style={[styles.progressBar, { width: `${getProgress()}%` }]} />
                 <Text style={styles.progressText}>{getProgress()}%</Text>
@@ -656,12 +729,12 @@ export default function RoofARCameraScreen() {
             </View>
 
             <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Surfaces: </Text>
+              <Text style={styles.statusRowLabel}>Surfaces: </Text>
               <Text style={styles.statusValue}>{capturedPlanes.length}</Text>
             </View>
 
             <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Points: </Text>
+              <Text style={styles.statusRowLabel}>Points: </Text>
               <Text style={styles.statusValue}>{session.points.length}</Text>
             </View>
             
@@ -891,7 +964,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 2,
   },
-  statusLabel: {
+  statusRowLabel: {
     color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
