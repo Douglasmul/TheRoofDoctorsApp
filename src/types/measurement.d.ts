@@ -42,7 +42,7 @@ export interface RoofPlane {
   /** Pitch-corrected projected area */
   projectedArea: number;
   /** Plane type classification */
-  type: 'primary' | 'secondary' | 'dormer' | 'chimney' | 'other';
+  type: 'primary' | 'secondary' | 'dormer' | 'hip' | 'chimney' | 'other';
   /** Confidence in plane detection */
   confidence: number;
   /** Material classification if detected */

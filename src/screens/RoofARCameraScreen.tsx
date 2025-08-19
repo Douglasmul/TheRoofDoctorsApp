@@ -106,6 +106,7 @@ const PlaneVisualization: React.FC<PlaneVisualizationProps> = ({
       primary: '#4CAF50',
       secondary: '#2196F3',
       dormer: '#FF9800',
+      hip: '#E91E63',
       chimney: '#9C27B0',
       other: '#607D8B',
     };

@@ -352,4 +352,140 @@ export const measurementReviewStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  
+  // New styles for surface type breakdown
+  breakdownSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  breakdownTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#234e70',
+    marginBottom: 12,
+  },
+  breakdownItem: {
+    marginBottom: 8,
+    padding: 8,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 6,
+  },
+  breakdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  breakdownType: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginRight: 8,
+  },
+  breakdownCount: {
+    fontSize: 12,
+    color: '#666',
+  },
+  breakdownArea: {
+    fontSize: 12,
+    color: '#666',
+  },
+  
+  // New styles for editing interface
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  validateButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  validateButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  planeHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  planeTypeIndicator: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  editButton: {
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  editButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  editForm: {
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  editRow: {
+    marginBottom: 12,
+  },
+  editLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#234e70',
+    marginBottom: 8,
+  },
+  typeSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  typeOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#e9ecef',
+    borderRadius: 16,
+  },
+  typeOptionSelected: {
+    backgroundColor: '#234e70',
+  },
+  typeOptionText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  typeOptionTextSelected: {
+    color: 'white',
+  },
+  materialSelector: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  materialOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#e9ecef',
+    borderRadius: 16,
+  },
+  materialOptionSelected: {
+    backgroundColor: '#FF9800',
+  },
+  materialOptionText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  materialOptionTextSelected: {
+    color: 'white',
+  },
 });

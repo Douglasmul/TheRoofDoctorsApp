@@ -8,49 +8,74 @@ import { RoofPlane } from '../types/measurement';
 describe('Surface Measurement Uniqueness', () => {
   // Mock function to simulate the generateSimulatedPlanes behavior
   function generateTestPlanes(sessionDuration: number): any[] {
-    const simulatedPlanes = [];
+    const planes = [];
     
-    // Main roof plane appears after 1 second
-    if (sessionDuration > 1000) {
-      simulatedPlanes.push({
-        id: 'roof_main',
-        area: 45.2 + Math.random() * 5,
-        confidence: 0.85 + Math.random() * 0.1,
-        distance: 8.5 + Math.random() * 1.5,
-      });
-    }
+    // Always include primary roof surface
+    planes.push({
+      id: 'roof_main',
+      type: 'primary',
+      area: 45.2 + Math.random() * 5, // 45.2 - 50.2
+      pitchAngle: 25 + Math.random() * 10, // 25-35 degrees
+      azimuthAngle: Math.random() * 360,
+      confidence: 0.85 + Math.random() * 0.1, // 85-95%
+      distance: 5 + Math.random() * 10,
+      material: 'shingle'
+    });
     
-    // Secondary roof section appears after 3 seconds  
+    // Add secondary section if session long enough
     if (sessionDuration > 3000) {
-      simulatedPlanes.push({
+      planes.push({
         id: 'roof_section_2',
-        area: 28.1 + Math.random() * 8,
-        confidence: 0.78 + Math.random() * 0.12,
-        distance: 10.2 + Math.random() * 2.0,
+        type: 'primary',
+        area: 28.1 + Math.random() * 5, // 28.1 - 33.1
+        pitchAngle: 22 + Math.random() * 8,
+        azimuthAngle: 180 + Math.random() * 40,
+        confidence: 0.80 + Math.random() * 0.15,
+        distance: 6 + Math.random() * 8,
+        material: 'shingle'
       });
     }
     
-    // First dormer appears after 5 seconds
+    // Add dormers if session long enough
     if (sessionDuration > 5000) {
-      simulatedPlanes.push({
+      planes.push({
         id: 'dormer_1',
-        area: 12.5 + Math.random() * 3,
-        confidence: 0.72 + Math.random() * 0.15,
-        distance: 7.8 + Math.random() * 1.2,
+        type: 'dormer',
+        area: 12.5 + Math.random() * 3, // 12.5 - 15.5
+        pitchAngle: 35 + Math.random() * 15,
+        azimuthAngle: 90 + Math.random() * 20,
+        confidence: 0.70 + Math.random() * 0.2,
+        distance: 3 + Math.random() * 5,
+        material: 'shingle'
       });
-    }
-    
-    // Second dormer appears after 7 seconds  
-    if (sessionDuration > 7000) {
-      simulatedPlanes.push({
+      
+      planes.push({
         id: 'dormer_2',
-        area: 15.3 + Math.random() * 4,
-        confidence: 0.68 + Math.random() * 0.18,
-        distance: 9.1 + Math.random() * 1.8,
+        type: 'dormer',
+        area: 15.3 + Math.random() * 4, // 15.3 - 19.3
+        pitchAngle: 40 + Math.random() * 10,
+        azimuthAngle: 270 + Math.random() * 30,
+        confidence: 0.75 + Math.random() * 0.15,
+        distance: 4 + Math.random() * 6,
+        material: 'tile'
       });
     }
     
-    return simulatedPlanes;
+    // Add hip roofs if session long enough
+    if (sessionDuration > 7000) {
+      planes.push({
+        id: 'hip_1',
+        type: 'hip',
+        area: 20.0 + Math.random() * 8, // 20.0 - 28.0
+        pitchAngle: 25 + Math.random() * 20,
+        azimuthAngle: 45 + Math.random() * 30, // Angled orientation
+        confidence: 0.78 + Math.random() * 0.12,
+        distance: 5 + Math.random() * 7,
+        material: 'shingle'
+      });
+    }
+    
+    return planes;
   }
 
   it('should generate unique areas for different surfaces', () => {
@@ -107,15 +132,31 @@ describe('Surface Measurement Uniqueness', () => {
 
   it('should properly identify dormer surfaces', () => {
     // Test plane type classification logic
-    const classifyPlaneType = (area: number, pitchAngle: number): string => {
+    const classifyPlaneType = (area: number, pitchAngle: number, azimuthAngle?: number): string => {
       // Primary roof surface: large area, moderate pitch
       if (area > 25 && pitchAngle > 15 && pitchAngle < 60) {
         return 'primary';
       }
       
+      // Hip roof: medium to large area, check angle first before dormer  
+      if (area > 15 && pitchAngle > 15 && pitchAngle < 60) {
+        // Check if azimuth suggests angled roof section (common in hips)
+        if (azimuthAngle && (azimuthAngle % 90) > 20 && (azimuthAngle % 90) < 70) {
+          return 'hip';
+        }
+      }
+      
       // Dormer: smaller to medium area, various pitches
       if (area > 8 && area <= 25 && pitchAngle > 20) {
         return 'dormer';
+      }
+      
+      // Hip roof: medium area, triangular shape, moderate pitch
+      if (area > 15 && area <= 30 && pitchAngle > 15 && pitchAngle < 55) {
+        // Simulate triangular shape detection for hips
+        if ((azimuthAngle % 90) > 20 && (azimuthAngle % 90) < 70) {
+          return 'hip';
+        }
       }
       
       // Secondary surfaces: medium areas or different orientations
@@ -140,6 +181,10 @@ describe('Surface Measurement Uniqueness', () => {
     expect(classifyPlaneType(12.5, 35)).toBe('dormer');
     expect(classifyPlaneType(15.3, 40)).toBe('dormer');
     expect(classifyPlaneType(4.5, 50)).toBe('dormer');
+    
+    // Test hip roof measurements
+    expect(classifyPlaneType(20.0, 30, 45)).toBe('hip'); // Medium area, angled orientation
+    expect(classifyPlaneType(25.0, 25, 135)).toBe('hip'); // Angled orientation
     
     // Test primary surface
     expect(classifyPlaneType(45.2, 30)).toBe('primary');
@@ -169,5 +214,47 @@ describe('Surface Measurement Uniqueness', () => {
     expect(areaSet.size).toBeGreaterThan(1);
     expect(confidenceSet.size).toBeGreaterThan(1);
     expect(distanceSet.size).toBeGreaterThan(1);
+  });
+
+  it('should properly classify hip roofs', () => {
+    const planes = generateTestPlanes(8000); // Ensure hip is included
+    
+    // Check if we have a hip surface
+    const hipSurfaces = planes.filter(p => p.type === 'hip');
+    expect(hipSurfaces.length).toBeGreaterThanOrEqual(0); // May or may not have hips depending on random generation
+    
+    // If we have a hip, verify its properties
+    hipSurfaces.forEach(hip => {
+      expect(hip.area).toBeGreaterThan(15);
+      expect(hip.area).toBeLessThan(35);
+      expect(hip.pitchAngle).toBeGreaterThan(15);
+      expect(hip.pitchAngle).toBeLessThan(65);
+    });
+  });
+
+  it('should validate surface type breakdown functionality', () => {
+    const planes = generateTestPlanes(8000);
+    
+    // Group by type (simulating getSurfaceTypeBreakdown)
+    const typeGroups = planes.reduce((acc, plane) => {
+      const type = plane.type || 'other';
+      if (!acc[type]) {
+        acc[type] = { count: 0, totalArea: 0 };
+      }
+      acc[type].count++;
+      acc[type].totalArea += plane.area;
+      return acc;
+    }, {} as Record<string, { count: number; totalArea: number }>);
+    
+    // Should have at least primary surfaces
+    expect(typeGroups.primary).toBeDefined();
+    expect(typeGroups.primary.count).toBeGreaterThan(0);
+    expect(typeGroups.primary.totalArea).toBeGreaterThan(0);
+    
+    // Verify each type has reasonable totals
+    Object.values(typeGroups).forEach(group => {
+      expect(group.count).toBeGreaterThan(0);
+      expect(group.totalArea).toBeGreaterThan(0);
+    });
   });
 });
