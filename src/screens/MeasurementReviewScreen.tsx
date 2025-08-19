@@ -22,7 +22,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import { RoofMeasurement, ExportRecord, MaterialCalculation } from '../types/measurement';
+import { RoofMeasurement, ExportRecord, MaterialCalculation, RoofPlane } from '../types/measurement';
 import { RoofMeasurementEngine } from '../services/RoofMeasurementEngine';
 import { measurementReviewStyles as styles } from '../styles/measurementReviewStyles';
 
@@ -311,7 +311,7 @@ export default function MeasurementReviewScreen() {
       sections.push('AUDIT TRAIL');
       sections.push('-'.repeat(30));
       measurement.auditTrail.forEach(entry => {
-        sections.push(`${entry.timestamp.toISOString()}: ${entry.action} - ${entry.details}`);
+        sections.push(`${entry.timestamp.toISOString()}: ${entry.action} - ${entry.description}`);
       });
       sections.push('');
     }

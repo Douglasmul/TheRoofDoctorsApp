@@ -312,9 +312,12 @@ export class RoofMeasurementEngine {
     const costEstimate = await this.calculateCostEstimate(finalArea, dominantMaterial);
 
     return {
+      baseArea: this.roundToPrecision(totalArea),
+      adjustedArea: this.roundToPrecision(finalArea),
       totalArea: this.roundToPrecision(finalArea),
       wastePercent: this.config.wasteFactorPercent + (complexityFactor - 1) * 100,
       dominantMaterial,
+      materialUnits: this.roundToPrecision(finalArea), // Basic estimate
       materialSpecific,
       costEstimate,
     };
@@ -543,7 +546,7 @@ export class RoofMeasurementEngine {
     }
 
     // Compliance checks
-    if (measurement.complianceStatus.status === 'failed') {
+    if (measurement.complianceStatus.status === 'non-compliant') {
       warnings.push('Measurement does not meet compliance standards');
     }
 
@@ -716,7 +719,7 @@ export class RoofMeasurementEngine {
    * Add audit trail entry
    */
   private async addAuditEntry(
-    action: string, 
+    action: 'create' | 'modify' | 'export' | 'sync' | 'view' | 'delete', 
     userId: string, 
     sessionId: string, 
     details: string
@@ -726,12 +729,9 @@ export class RoofMeasurementEngine {
       timestamp: new Date(),
       action,
       userId,
+      description: details,
       sessionId,
-      details,
-      metadata: {
-        platform: Platform.OS,
-        version: '1.0.0',
-      },
+      dataHash: `hash_${Date.now()}`,
     };
 
     this.auditTrail.push(entry);
