@@ -140,8 +140,15 @@ export default function HomeScreen() {
           )}
           
           {/* Developer Tools - Only in Development */}
-          {__DEV__ && Object.entries(developerTools).map(([category, items]) =>
-            renderMenuCategory(category, items)
+          {__DEV__ && (
+            <>
+              <View style={styles.devToolsSeparator}>
+                <Text style={styles.devToolsLabel}>Development Only</Text>
+              </View>
+              {Object.entries(developerTools).map(([category, items]) =>
+                renderMenuCategory(category, items)
+              )}
+            </>
           )}
           
           {__DEV__ && (
@@ -314,5 +321,21 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#e9ecef',
+  },
+  devToolsSeparator: {
+    marginTop: 20,
+    marginBottom: 10,
+    paddingTop: 15,
+    borderTopWidth: 2,
+    borderTopColor: '#e1e8ed',
+    alignItems: 'center',
+  },
+  devToolsLabel: {
+    fontSize: 12,
+    color: '#6c757d',
+    fontWeight: '600',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 10,
+    marginTop: -8,
   },
 });
