@@ -1,7 +1,7 @@
 /**
- * @fileoverview Manual Point Selection Camera for roof measurement
- * Features: Touch-based point selection, clear visual feedback, point editing
- * @version 1.0.0
+ * @fileoverview Enhanced Manual Point Selection Camera for professional roof measurement
+ * Features: Multiple measurement modes, calibration, undo/redo, professional camera controls
+ * @version 2.0.0
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
@@ -17,10 +17,14 @@ import {
   Dimensions,
   GestureResponderEvent,
 } from 'react-native';
-import Svg, { Line, Polygon } from 'react-native-svg';
+import Svg, { Line, Polygon, Circle, Rect } from 'react-native-svg';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ARPoint, RoofPlane } from '../types/measurement';
+import { measurementModeService, MeasurementMode, UndoRedoState } from '../services/MeasurementModeService';
+import { calibrationService } from '../services/CalibrationService';
+import { enhancedCameraService, CameraState } from '../services/EnhancedCameraService';
+import { tutorialService } from '../services/TutorialService';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
