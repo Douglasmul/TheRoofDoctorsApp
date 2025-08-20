@@ -10,6 +10,9 @@ import MeasureRoofScreen from '../screens/MeasureRoofScreen';
 import RoofARCameraScreen from '../screens/RoofARCameraScreen';
 import ManualMeasurementScreen from '../screens/ManualMeasurementScreen';
 import ManualPointSelectionCamera from '../screens/ManualPointSelectionCamera';
+import EnhancedManualPointSelectionCamera from '../screens/EnhancedManualPointSelectionCamera';
+import CalibrationScreen from '../screens/CalibrationScreen';
+import ProfessionalFeaturesSummary from '../screens/ProfessionalFeaturesSummary';
 import MeasurementReviewScreen from '../screens/MeasurementReviewScreen';
 import SignupScreen from '../screens/SignupScreen';
 import LoginScreen from '../screens/LoginScreen';
@@ -68,6 +71,30 @@ export default function AppNavigator() {
           options={{ 
             title: 'Select Points',
             headerShown: false, // Hide header for full camera view
+          }}
+        />
+        <Stack.Screen 
+          name="EnhancedManualPointSelection" 
+          component={EnhancedManualPointSelectionCamera} 
+          options={{ 
+            title: 'Enhanced Point Selection',
+            headerShown: false, // Hide header for full camera view
+          }}
+        />
+        <Stack.Screen 
+          name="Calibration" 
+          component={CalibrationScreen} 
+          options={{ 
+            title: 'Measurement Calibration',
+            headerShown: false, // Hide header for full camera view
+          }}
+        />
+        <Stack.Screen 
+          name="ProfessionalFeatures" 
+          component={ProfessionalFeaturesSummary} 
+          options={{ 
+            title: 'Professional Features',
+            headerShown: false,
           }}
         />
         <Stack.Screen 
