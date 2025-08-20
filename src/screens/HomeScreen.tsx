@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { COMPANY_INFO } from '../constants/company';
 import { useCompanyBranding } from '../hooks/useCompanyBranding';
 
@@ -8,53 +9,76 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const { companyInfo } = useCompanyBranding();
   
-  // Only show testing menu in development mode by default
-  const [showTestingMenu, setShowTestingMenu] = useState(__DEV__ || false);
+  // Always show main menu in production, but allow toggle for better UX
+  const [showMainMenu, setShowMainMenu] = useState(true);
 
-  // Testing screens organized by category
-  const testingScreens = {
-    'Authentication': [
-      { name: 'Login', screen: 'Login' },
-      { name: 'Sign Up', screen: 'Signup' }
+  // Main app menu organized by category with icons
+  const menuSections = {
+    'Account': [
+      { name: 'Profile', screen: 'Profile', icon: 'person', iconSet: 'MaterialIcons' },
+      { name: 'Settings', screen: 'Settings', icon: 'settings', iconSet: 'MaterialIcons' },
+      { name: 'Notifications', screen: 'Notifications', icon: 'notifications', iconSet: 'MaterialIcons' }
     ],
-    'User Account': [
-      { name: 'Profile', screen: 'Profile' },
-      { name: 'Settings', screen: 'Settings' },
-      { name: 'Notifications', screen: 'Notifications' }
-    ],
-    'Core Features': [
-      { name: 'AR Camera', screen: 'RoofARCamera' },
-      { name: 'Welcome', screen: 'OpenApp' }
+    'Tools': [
+      { name: 'AR Camera', screen: 'RoofARCamera', icon: 'camera-alt', iconSet: 'MaterialIcons' },
+      { name: 'Manual Measurement', screen: 'ManualMeasurement', icon: 'straighten', iconSet: 'MaterialIcons' },
+      { name: 'Welcome Guide', screen: 'OpenApp', icon: 'info', iconSet: 'MaterialIcons' }
     ],
     'Business': [
-      { name: 'Reports', screen: 'Reports' },
-      { name: 'Admin Panel', screen: 'Admin' }
+      { name: 'Reports', screen: 'Reports', icon: 'bar-chart', iconSet: 'MaterialIcons' },
+      { name: 'Quote Generator', screen: 'Quote', icon: 'description', iconSet: 'MaterialIcons' }
     ],
     'Support': [
-      { name: 'Help & Support', screen: 'Help' },
-      { name: 'Legal Info', screen: 'Legal' },
-      { name: 'Error Screen', screen: 'Error' }
+      { name: 'Help & Support', screen: 'Help', icon: 'help', iconSet: 'MaterialIcons' },
+      { name: 'Legal Info', screen: 'Legal', icon: 'gavel', iconSet: 'MaterialIcons' }
+    ],
+    'Authentication': [
+      { name: 'Login', screen: 'Login', icon: 'login', iconSet: 'MaterialIcons' },
+      { name: 'Sign Up', screen: 'Signup', icon: 'person-add', iconSet: 'MaterialIcons' },
+      { name: 'Logout', action: 'logout', icon: 'logout', iconSet: 'MaterialIcons' }
     ]
   };
 
-  const renderTestingButton = (item: { name: string; screen: string }) => {
+  // Developer tools - only visible in development mode
+  const developerTools = {
+    'Developer Tools': [
+      { name: 'Admin Panel', screen: 'Admin', icon: 'admin-panel-settings', iconSet: 'MaterialIcons' },
+      { name: 'Error Screen', screen: 'Error', icon: 'error', iconSet: 'MaterialIcons' }
+    ]
+  };
+
+  const handleMenuAction = (item: { name: string; screen?: string; action?: string }) => {
+    if (item.action === 'logout') {
+      // Handle logout action - you might want to add actual logout logic here
+      console.log('Logout pressed - implement logout logic');
+      // For demo purposes, just show an alert or navigate to login
+      navigation.navigate('Login' as never);
+    } else if (item.screen) {
+      navigation.navigate(item.screen as never);
+    }
+  };
+
+  const renderMenuButton = (item: { name: string; screen?: string; action?: string; icon: string; iconSet: string }) => {
+    const IconComponent = item.iconSet === 'MaterialCommunityIcons' ? MaterialCommunityIcons : MaterialIcons;
+    
     return (
       <TouchableOpacity
-        key={item.screen}
-        style={styles.testingButton}
-        onPress={() => navigation.navigate(item.screen as never)}
+        key={item.screen || item.action || item.name}
+        style={styles.menuButton}
+        onPress={() => handleMenuAction(item)}
       >
-        <Text style={styles.testingButtonText}>{item.name}</Text>
+        <IconComponent name={item.icon as any} size={20} color="#234e70" style={styles.menuButtonIcon} />
+        <Text style={styles.menuButtonText}>{item.name}</Text>
       </TouchableOpacity>
     );
   };
 
-  const renderTestingCategory = (category: string, screens: { name: string; screen: string }[]) => {
+  const renderMenuCategory = (category: string, items: { name: string; screen?: string; action?: string; icon: string; iconSet: string }[]) => {
     return (
-      <View key={category} style={styles.testingCategory}>
-        <Text style={styles.testingCategoryTitle}>{category}</Text>
-        <View style={styles.testingCategoryButtons}>
-          {screens.map(renderTestingButton)}
+      <View key={category} style={styles.menuCategory}>
+        <Text style={styles.menuCategoryTitle}>{category}</Text>
+        <View style={styles.menuCategoryButtons}>
+          {items.map(renderMenuButton)}
         </View>
       </View>
     );
@@ -90,29 +114,41 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Testing Menu Toggle */}
+      {/* Main Menu Toggle */}
       <TouchableOpacity
-        style={styles.testingToggle}
-        onPress={() => setShowTestingMenu(!showTestingMenu)}
+        style={styles.menuToggle}
+        onPress={() => setShowMainMenu(!showMainMenu)}
       >
-        <Text style={styles.testingToggleText}>
-          {showTestingMenu ? '▼ Hide Testing Menu' : '▶ Show Testing Menu'}
+        <MaterialIcons 
+          name={showMainMenu ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} 
+          size={20} 
+          color="#234e70" 
+        />
+        <Text style={styles.menuToggleText}>
+          {showMainMenu ? 'Hide Menu' : 'Show Menu'}
         </Text>
       </TouchableOpacity>
 
-      {/* Testing Menu */}
-      {showTestingMenu && (
-        <View style={styles.testingMenu}>
-          <Text style={styles.testingMenuTitle}>🧪 Screen Testing Navigation</Text>
-          <Text style={styles.testingMenuSubtitle}>Access all screens for testing purposes</Text>
+      {/* Main App Menu */}
+      {showMainMenu && (
+        <View style={styles.mainMenu}>
+          <Text style={styles.mainMenuTitle}>📱 App Menu</Text>
+          <Text style={styles.mainMenuSubtitle}>Access all features and settings</Text>
           
-          {Object.entries(testingScreens).map(([category, screens]) =>
-            renderTestingCategory(category, screens)
+          {Object.entries(menuSections).map(([category, items]) =>
+            renderMenuCategory(category, items)
           )}
           
-          <Text style={styles.testingNote}>
-            📝 Note: This testing menu should be hidden in production builds
-          </Text>
+          {/* Developer Tools - Only in Development */}
+          {__DEV__ && Object.entries(developerTools).map(([category, items]) =>
+            renderMenuCategory(category, items)
+          )}
+          
+          {__DEV__ && (
+            <Text style={styles.devNote}>
+              🧪 Developer tools are hidden in production builds
+            </Text>
+          )}
         </View>
       )}
     </ScrollView>
@@ -178,22 +214,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   
-  // Testing Menu Styles
-  testingToggle: {
+  // Main Menu Styles
+  menuToggle: {
     backgroundColor: '#e8f4fd',
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#234e70',
     marginVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
-  testingToggleText: {
+  menuToggleText: {
     color: '#234e70',
     fontSize: 16,
     fontWeight: '500',
   },
-  testingMenu: {
+  mainMenu: {
     width: '100%',
     backgroundColor: '#ffffff',
     borderRadius: 12,
@@ -207,54 +247,65 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  testingMenuTitle: {
+  mainMenuTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#234e70',
     marginBottom: 8,
     textAlign: 'center',
   },
-  testingMenuSubtitle: {
+  mainMenuSubtitle: {
     fontSize: 14,
     color: '#666',
     marginBottom: 20,
     textAlign: 'center',
   },
-  testingCategory: {
+  menuCategory: {
     marginBottom: 20,
   },
-  testingCategoryTitle: {
+  menuCategoryTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#234e70',
-    marginBottom: 10,
+    marginBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e1e8ed',
-    paddingBottom: 4,
+    paddingBottom: 6,
   },
-  testingCategoryButtons: {
+  menuCategoryButtons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: 8,
   },
-  testingButton: {
+  menuButton: {
     backgroundColor: '#f8f9fa',
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 6,
+    borderRadius: 8,
     marginVertical: 4,
-    marginHorizontal: 2,
     borderWidth: 1,
     borderColor: '#dee2e6',
     minWidth: '48%',
     alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  testingButtonText: {
+  menuButtonIcon: {
+    flexShrink: 0,
+  },
+  menuButtonText: {
     color: '#495057',
     fontSize: 14,
     fontWeight: '500',
+    flex: 1,
   },
-  testingNote: {
+  devNote: {
     fontSize: 12,
     color: '#6c757d',
     fontStyle: 'italic',
