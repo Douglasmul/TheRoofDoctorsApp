@@ -128,6 +128,10 @@ export interface Quote {
   measurement?: RoofMeasurement;
   /** Material calculation results */
   materialCalculation?: MaterialCalculation;
+  /** Whether this is a manual measurement */
+  isManualMeasurement?: boolean;
+  /** Measurement validation results */
+  measurementValidation?: any;
   
   /** Itemized cost breakdown */
   lineItems: QuoteLineItem[];

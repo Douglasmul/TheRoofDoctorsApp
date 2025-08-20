@@ -72,6 +72,26 @@ export default function QuoteScreen() {
   }, []);
 
   /**
+   * Handle measurement data returned from manual measurement
+   */
+  useEffect(() => {
+    const { savedFromMeasurement } = route.params || {};
+    if (savedFromMeasurement && measurement) {
+      // Update the quote with the measurement data
+      updateQuote({
+        measurement,
+        isManualMeasurement: true,
+      });
+      
+      // Navigate to measurements step to show the results
+      setFormState(prev => ({
+        ...prev,
+        currentStep: 'measurements',
+      }));
+    }
+  }, [route.params?.savedFromMeasurement, measurement]);
+
+  /**
    * Handle back button
    */
   useFocusEffect(
