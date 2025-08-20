@@ -14,8 +14,30 @@ export type RootStackParamList = {
   // Core Functionality Screens
   MeasureRoof: undefined;
   RoofARCamera: undefined;
-  MeasurementReview: { measurement: RoofMeasurement };
-  Quote: { measurement?: RoofMeasurement; quoteId?: string };
+  ManualMeasurement: { 
+    quoteId?: string; 
+    propertyInfo?: any; 
+    returnScreen?: string; 
+    mode?: string; 
+    pointsSelected?: any[];
+    surfaceType?: string;
+  };
+  ManualPointSelection: {
+    sessionId: string;
+    surfaceType?: string;
+    existingPoints?: any[];
+    pointsSelected?: any[];
+  };
+  MeasurementReview: { 
+    measurement: RoofMeasurement; 
+    isManual?: boolean; 
+    validationResult?: any; 
+  };
+  Quote: { 
+    measurement?: RoofMeasurement; 
+    quoteId?: string; 
+    savedFromMeasurement?: boolean; 
+  };
   
   // Authentication Screens
   Login: undefined;

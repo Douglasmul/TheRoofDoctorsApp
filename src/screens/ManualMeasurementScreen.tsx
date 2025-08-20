@@ -13,7 +13,8 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { RootStackParamList } from '../types/navigation';
 import { RoofMeasurementEngine } from '../services/RoofMeasurementEngine';
 import { RoofPlane, ARPoint } from '../types/measurement';
 
@@ -161,8 +162,11 @@ const SurfaceReview: React.FC<SurfaceReviewProps> = ({ surface, onSave, onEdit, 
  */
 export default function ManualMeasurementScreen() {
   const navigation = useNavigation();
-  const route = useRoute();
+  const route = useRoute<RouteProp<RootStackParamList, 'ManualMeasurement'>>();
   const measurementEngine = useRef(new RoofMeasurementEngine());
+  
+  // Extract quote information from route params
+  const { quoteId, propertyInfo, returnScreen, mode } = route.params || {};
   
   const [session, setSession] = useState<ManualMeasurementSession>({
     id: `manual_${Date.now()}`,
@@ -402,6 +406,51 @@ export default function ManualMeasurementScreen() {
   }, [session, navigation]);
 
   /**
+   * Save measurements directly to quote
+   */
+  const saveToQuote = useCallback(async () => {
+    if (session.completedSurfaces.length === 0) {
+      Alert.alert('No Measurements', 'Please measure at least one roof surface before saving to quote.');
+      return;
+    }
+
+    try {
+      // Use enhanced manual measurement validation
+      const validationResult = await measurementEngine.current.validateManualMeasurement(session.completedSurfaces);
+      
+      // Calculate final measurement using the measurement engine
+      const measurement = await measurementEngine.current.calculateRoofMeasurement(
+        session.completedSurfaces,
+        session.id,
+        'current_user' // TODO: Get from auth context
+      );
+
+      // Add validation results to measurement
+      measurement.validationResult = validationResult;
+      
+      // Navigate back to quote with measurement data
+      if (returnScreen === 'QuoteScreen' && quoteId) {
+        navigation.navigate('Quote', { 
+          measurement, 
+          quoteId,
+          savedFromMeasurement: true 
+        });
+      } else {
+        // Default navigation if no quote context
+        navigation.navigate('MeasurementReview', { 
+          measurement, 
+          isManual: true, 
+          validationResult 
+        });
+      }
+      
+    } catch (error) {
+      console.error('Save to quote error:', error);
+      Alert.alert('Save Error', 'Failed to save measurements to quote. Please try again.');
+    }
+  }, [session.completedSurfaces, quoteId, returnScreen, navigation]);
+
+  /**
    * Reset measurement session
    */
   const resetMeasurement = useCallback(() => {
@@ -503,6 +552,59 @@ export default function ManualMeasurementScreen() {
         )}
       </ScrollView>
 
+      {/* Always Visible Bottom Bar with Area/Square Footage */}
+      <View style={styles.bottomBar}>
+        <View style={styles.bottomBarContent}>
+          <View style={styles.bottomBarStats}>
+            <View style={styles.bottomBarStat}>
+              <Text style={styles.bottomBarStatValue}>
+                {session.completedSurfaces.reduce((sum, surface) => sum + surface.area, 0).toFixed(1)}
+              </Text>
+              <Text style={styles.bottomBarStatLabel}>Total Area (m²)</Text>
+            </View>
+            <View style={styles.bottomBarStat}>
+              <Text style={styles.bottomBarStatValue}>
+                {(session.completedSurfaces.reduce((sum, surface) => sum + surface.area, 0) * 10.764).toFixed(0)}
+              </Text>
+              <Text style={styles.bottomBarStatLabel}>Square Footage</Text>
+            </View>
+            <View style={styles.bottomBarStat}>
+              <Text style={styles.bottomBarStatValue}>{session.completedSurfaces.length}</Text>
+              <Text style={styles.bottomBarStatLabel}>Surfaces</Text>
+            </View>
+          </View>
+          
+          {/* Save Button */}
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              session.completedSurfaces.length === 0 && styles.saveButtonDisabled
+            ]}
+            onPress={() => {
+              // Show save options if in quote mode, otherwise just save
+              if (quoteId) {
+                Alert.alert(
+                  'Save Measurements',
+                  'Choose how to save your measurements:',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Save to Quote', onPress: saveToQuote },
+                    { text: 'Review First', onPress: completeMeasurement },
+                  ]
+                );
+              } else {
+                completeMeasurement();
+              }
+            }}
+            disabled={session.completedSurfaces.length === 0}
+          >
+            <Text style={styles.saveButtonText}>
+              {quoteId ? 'Save' : 'Save'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* Action Buttons */}
       <View style={styles.actionButtons}>
         <TouchableOpacity
@@ -513,6 +615,19 @@ export default function ManualMeasurementScreen() {
         </TouchableOpacity>
 
         <View style={styles.buttonRow}>
+          {quoteId && (
+            <TouchableOpacity
+              style={[
+                styles.saveToQuoteButton,
+                session.completedSurfaces.length === 0 && styles.saveToQuoteButtonDisabled
+              ]}
+              onPress={saveToQuote}
+              disabled={session.completedSurfaces.length === 0}
+            >
+              <Text style={styles.saveToQuoteButtonText}>Save to Quote</Text>
+            </TouchableOpacity>
+          )}
+          
           <TouchableOpacity
             style={styles.resetButton}
             onPress={resetMeasurement}
@@ -845,6 +960,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
+  saveButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
   cancelButton: {
     backgroundColor: '#6c757d',
     paddingVertical: 12,
@@ -855,5 +973,59 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  // Bottom bar styles
+  bottomBar: {
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  bottomBarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  bottomBarStats: {
+    flexDirection: 'row',
+    flex: 1,
+  },
+  bottomBarStat: {
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  bottomBarStatValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#234e70',
+  },
+  bottomBarStatLabel: {
+    fontSize: 10,
+    color: '#666',
+    marginTop: 2,
+  },
+  // Save to Quote button styles
+  saveToQuoteButton: {
+    backgroundColor: '#2196F3',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flex: 1,
+    marginRight: 8,
+    alignItems: 'center',
+  },
+  saveToQuoteButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  saveToQuoteButtonDisabled: {
+    backgroundColor: '#ccc',
   },
 });

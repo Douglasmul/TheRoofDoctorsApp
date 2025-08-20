@@ -119,6 +119,8 @@ export interface RoofMeasurement {
   exports: ExportRecord[];
   /** Compliance status */
   complianceStatus: ComplianceStatus;
+  /** Validation results from measurement engine */
+  validationResult?: any;
   /** Additional metadata */
   metadata: Record<string, any>;
 }

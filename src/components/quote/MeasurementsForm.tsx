@@ -21,6 +21,38 @@ interface Props {
 }
 
 /**
+ * Helper function to get user-friendly plane type name
+ */
+const getPlaneTypeName = (type: string): string => {
+  const typeNames: Record<string, string> = {
+    primary: 'Main Roof',
+    secondary: 'Secondary Roof',
+    dormer: 'Dormer',
+    hip: 'Hip',
+    chimney: 'Chimney',
+    other: 'Other',
+    custom: 'Custom Shape',
+  };
+  return typeNames[type] || 'Unknown';
+};
+
+/**
+ * Helper function to get color for plane type
+ */
+const getPlaneTypeColor = (type: string): string => {
+  const colors: Record<string, string> = {
+    primary: '#4CAF50',
+    secondary: '#2196F3',
+    dormer: '#FF9800',
+    hip: '#E91E63',
+    chimney: '#9C27B0',
+    other: '#607D8B',
+    custom: '#795548',
+  };
+  return colors[type] || '#607D8B';
+};
+
+/**
  * Measurements and calculations form component
  */
 export default function MeasurementsForm({ quote, errors, onUpdateQuote, onUpdateErrors }: Props) {
@@ -188,6 +220,28 @@ export default function MeasurementsForm({ quote, errors, onUpdateQuote, onUpdat
           <Text style={styles.summaryValue}>
             {new Date(measurement.timestamp).toLocaleDateString()}
           </Text>
+        </View>
+        
+        {/* Measured Parts Summary */}
+        <View style={styles.measuredPartsSection}>
+          <Text style={styles.sectionSubtitle}>Measured Parts Summary:</Text>
+          {measurement.planes.map((plane, index) => {
+            const typeName = getPlaneTypeName(plane.type);
+            return (
+              <View key={plane.id || index} style={styles.measuredPartItem}>
+                <View style={[styles.measuredPartIndicator, { backgroundColor: getPlaneTypeColor(plane.type) }]} />
+                <View style={styles.measuredPartContent}>
+                  <Text style={styles.measuredPartTitle}>
+                    {typeName} #{index + 1}
+                  </Text>
+                  <Text style={styles.measuredPartDetails}>
+                    {plane.area.toFixed(2)} m² ({(plane.area * 10.764).toFixed(0)} sq ft)
+                    {plane.perimeter && ` • ${plane.perimeter.toFixed(1)}m perimeter`}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
         </View>
       </View>
     );
@@ -445,5 +499,43 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 12,
     fontStyle: 'italic',
+  },
+  // Measured parts styles
+  measuredPartsSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.text + '20',
+  },
+  sectionSubtitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: theme.colors.text,
+    marginBottom: 12,
+  },
+  measuredPartItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  measuredPartIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  measuredPartContent: {
+    flex: 1,
+  },
+  measuredPartTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text,
+  },
+  measuredPartDetails: {
+    fontSize: 12,
+    color: theme.colors.text + '80',
+    marginTop: 2,
   },
 });
