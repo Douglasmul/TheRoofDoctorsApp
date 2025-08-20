@@ -16,6 +16,7 @@ import {
 } from '../types/quote';
 import { RoofMeasurement, MaterialCalculation } from '../types/measurement';
 import { RoofMeasurementEngine } from './RoofMeasurementEngine';
+import { COMPANY_INFO } from '../constants/company';
 
 /**
  * Quote service for managing quote operations
