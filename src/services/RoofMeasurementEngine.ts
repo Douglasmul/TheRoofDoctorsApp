@@ -590,8 +590,8 @@ export class RoofMeasurementEngine {
         recommendations.push(`For complex roof shapes, add points at corners and edges every 3-5 meters`);
       }
 
-      // Area reasonableness with contextual feedback
-      if (plane.area < 2) {
+      // Area reasonableness with contextual feedback - Updated thresholds for real-world measurements
+      if (plane.area < 0.5) {
         warnings.push(`${planeLabel}: Very small area (${plane.area.toFixed(1)} m²)`);
         recommendations.push(`Verify this is a complete roof section - small areas may be measurement errors`);
       } else if (plane.area > 500) {
@@ -622,8 +622,8 @@ export class RoofMeasurementEngine {
       (errors.length === 0 ? 10 : 0)
     );
 
-    // Coverage analysis
-    if (totalArea < 30) {
+    // Coverage analysis - Updated threshold for real-world measurements
+    if (totalArea < 5) {
       warnings.push('Small total roof area measured');
       recommendations.push('Ensure all major roof sections are included in the measurement');
     }
