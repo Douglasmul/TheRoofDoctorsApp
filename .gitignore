@@ -17,3 +17,6 @@ verify-fixes.js
 
 # Build output
 dist/
+
+# Demo scripts (development only)
+src/demo/
