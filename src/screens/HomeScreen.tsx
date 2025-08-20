@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COMPANY_INFO } from '../constants/company';
+import { useCompanyBranding } from '../hooks/useCompanyBranding';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const { companyInfo } = useCompanyBranding();
+  
   // Only show testing menu in development mode by default
   const [showTestingMenu, setShowTestingMenu] = useState(__DEV__ || false);
 
@@ -59,7 +62,16 @@ export default function HomeScreen() {
 
   return (
     <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.container}>
-      <Text style={styles.header}>{COMPANY_INFO.name}</Text>
+      {/* Company Header with Logo and Name */}
+      <View style={styles.companyHeader}>
+        {companyInfo.logoUri && (
+          <Image source={{ uri: companyInfo.logoUri }} style={styles.companyLogo} />
+        )}
+        <Text style={styles.header}>{companyInfo.name}</Text>
+        {companyInfo.hasCustomBranding && (
+          <Text style={styles.brandingIndicator}>Custom Branding</Text>
+        )}
+      </View>
       <Text style={styles.subheader}>Welcome to your enterprise roofing assistant.</Text>
       
       {/* Main App Buttons */}
@@ -118,11 +130,27 @@ const styles = StyleSheet.create({
     padding: 24,
     minHeight: '100%',
   },
+  companyHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  companyLogo: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 12,
+  },
   header: {
     fontSize: 32,
     fontWeight: 'bold',
     color: '#234e70',
-    marginBottom: 16,
+    textAlign: 'center',
+  },
+  brandingIndicator: {
+    fontSize: 12,
+    color: '#28a745',
+    marginTop: 4,
+    fontWeight: '500',
   },
   subheader: {
     fontSize: 18,

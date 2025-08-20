@@ -5,7 +5,7 @@
  * © 2025 The Roof Doctors
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
   Alert,
   RefreshControl,
   Image,
+  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -27,6 +28,7 @@ import { SuccessMessage, ErrorMessage } from '../components/common/FeedbackMessa
 import { I18nManager } from '../i18n';
 import { RootStackParamList } from '../types/navigation';
 import { useCompanySettings } from '../hooks/useCompanySettings';
+import { useCompanyBranding } from '../hooks/useCompanyBranding';
 import { DEFAULT_COMPANY_INFO } from '../constants/company';
 
 /**
@@ -116,12 +118,31 @@ export default function SettingsScreen() {
   const companySettings = useCompanySettings();
   const [tempCompanyName, setTempCompanyName] = useState('');
 
+  // Company branding state
+  const {
+    companyInfo,
+    settings: brandingSettings,
+    updateCompanyName,
+    updateCompanyLogo,
+    clearBranding,
+    isLoading: brandingLoading,
+  } = useCompanyBranding();
+  
+  const [tempBrandingName, setTempBrandingName] = useState('');
+
   // Initialize temp company name when company settings load
   React.useEffect(() => {
     if (!companySettings.isLoading) {
       setTempCompanyName(companySettings.settings.name || '');
     }
   }, [companySettings.isLoading, companySettings.settings.name]);
+
+  // Initialize temp branding name when branding loads
+  useEffect(() => {
+    if (brandingSettings.customName) {
+      setTempBrandingName(brandingSettings.customName);
+    }
+  }, [brandingSettings.customName]);
 
   /**
    * Refresh settings data
@@ -339,6 +360,78 @@ export default function SettingsScreen() {
   };
 
   /**
+   * Handle company logo selection
+   */
+  const handleBrandingLogoSelection = async () => {
+    try {
+      // Request permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Sorry, we need camera roll permissions to select a logo image.'
+        );
+        return;
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3], // More flexible aspect ratio for logos
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await updateCompanyLogo(result.assets[0].uri);
+        setMessage({ type: 'success', text: 'Logo updated successfully' });
+      }
+    } catch (error) {
+      console.error('Failed to select logo:', error);
+      setMessage({ type: 'error', text: 'Failed to update logo' });
+    }
+  };
+
+  /**
+   * Handle company name update
+   */
+  const handleBrandingNameUpdate = async () => {
+    try {
+      await updateCompanyName(tempBrandingName);
+      setMessage({ type: 'success', text: 'Company name updated successfully' });
+    } catch (error) {
+      console.error('Failed to update company name:', error);
+      setMessage({ type: 'error', text: 'Failed to update company name' });
+    }
+  };
+
+  /**
+   * Handle clearing all branding
+   */
+  const handleClearBranding = () => {
+    Alert.alert(
+      'Clear Branding',
+      'Are you sure you want to remove all custom branding? This will restore the default company name and logo.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Clear', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await clearBranding();
+              setTempBrandingName('');
+              setMessage({ type: 'success', text: 'Branding cleared successfully' });
+            } catch (error) {
+              setMessage({ type: 'error', text: 'Failed to clear branding' });
+            }
+          }
+        },
+      ]
+    );
+  };
+
+  /**
    * Language options
    */
   const languageOptions = I18nManager.getAvailableLanguages().map(lang => ({
@@ -426,6 +519,83 @@ export default function SettingsScreen() {
           )}
         </View>
       )}
+
+      {/* Company Branding */}
+      <FormSection title="Company Branding">
+        {/* Current Branding Preview */}
+        <View style={styles.brandingPreview}>
+          <Text style={styles.brandingPreviewTitle}>Current Branding</Text>
+          <View style={styles.brandingPreviewContent}>
+            {companyInfo.logoUri ? (
+              <Image source={{ uri: companyInfo.logoUri }} style={styles.brandingLogoPreview} />
+            ) : (
+              <View style={styles.brandingLogoPlaceholder}>
+                <Text style={styles.brandingLogoPlaceholderText}>No Logo</Text>
+              </View>
+            )}
+            <View style={styles.brandingInfo}>
+              <Text style={styles.companyNamePreview}>{companyInfo.name}</Text>
+              <Text style={styles.brandingStatus}>
+                {companyInfo.hasCustomBranding ? 'Custom Branding Active' : 'Default Branding'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Company Name Input */}
+        <View style={styles.settingRowVertical}>
+          <Text style={styles.settingLabel}>Company Name</Text>
+          <Text style={styles.settingDescription}>
+            Enter your company name to customize branding throughout the app
+          </Text>
+          <View style={styles.companyNameInput}>
+            <TextInput
+              style={styles.textInput}
+              value={tempBrandingName}
+              onChangeText={setTempBrandingName}
+              placeholder={companyInfo.name}
+              placeholderTextColor={theme.colors.text + '60'}
+            />
+            <TouchableOpacity
+              style={styles.updateButton}
+              onPress={handleBrandingNameUpdate}
+              disabled={!tempBrandingName.trim() || brandingLoading}
+            >
+              <Text style={styles.updateButtonText}>Update</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Logo Selection */}
+        <View style={styles.settingRowVertical}>
+          <Text style={styles.settingLabel}>Company Logo</Text>
+          <Text style={styles.settingDescription}>
+            Select an image to use as your company logo in quotes and headers
+          </Text>
+          <TouchableOpacity
+            style={styles.logoButton}
+            onPress={handleBrandingLogoSelection}
+            disabled={brandingLoading}
+          >
+            <Text style={styles.logoButtonText}>
+              {companyInfo.logoUri ? 'Change Logo' : 'Select Logo'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Clear Branding */}
+        {companyInfo.hasCustomBranding && (
+          <View style={styles.settingRowVertical}>
+            <TouchableOpacity
+              style={styles.clearBrandingButton}
+              onPress={handleClearBranding}
+              disabled={brandingLoading}
+            >
+              <Text style={styles.clearBrandingButtonText}>Clear Custom Branding</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </FormSection>
 
       {/* Company Settings */}
       <FormSection title="Company Settings">
@@ -766,6 +936,117 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  
+  // Company branding styles
+  brandingPreview: {
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: theme.colors.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.text + '20',
+  },
+  brandingPreviewTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 12,
+  },
+  brandingPreviewContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  brandingLogoPreview: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 16,
+  },
+  brandingLogoPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: theme.colors.text + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  brandingLogoPlaceholderText: {
+    fontSize: 10,
+    color: theme.colors.text,
+    opacity: 0.6,
+    textAlign: 'center',
+  },
+  brandingInfo: {
+    flex: 1,
+  },
+  companyNamePreview: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  brandingStatus: {
+    fontSize: 12,
+    color: theme.colors.primary,
+    opacity: 0.8,
+  },
+  companyNameInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 12,
+  },
+  textInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: theme.colors.text + '30',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: theme.colors.text,
+    backgroundColor: theme.colors.background,
+  },
+  updateButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  updateButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  logoButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  logoButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  clearBrandingButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#ef4444',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  clearBrandingButtonText: {
+    color: '#ef4444',
+    fontSize: 16,
+    fontWeight: '600',
   },
   logoContainer: {
     marginTop: 12,
