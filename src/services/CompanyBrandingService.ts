@@ -72,7 +72,7 @@ export class CompanyBrandingService {
     const hasCustomLogo = Boolean(this.settings.customLogoUri?.trim());
     const hasCustomBranding = hasCustomName || hasCustomLogo;
 
-    const companyName = hasCustomName ? this.settings.customName!.trim() : COMPANY_INFO.name;
+    const companyName = this.settings.customName?.trim() || COMPANY_INFO.name;
     
     return {
       ...COMPANY_INFO,
