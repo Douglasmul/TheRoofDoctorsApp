@@ -15,15 +15,19 @@ import {
   Switch,
   Alert,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useTranslation } from 'react-i18next';
+import * as ImagePicker from 'expo-image-picker';
 import { theme } from '../theme/theme';
-import { FormSection, FormPicker, FormButton } from '../components/FormComponents';
+import { FormSection, FormPicker, FormButton, FormField } from '../components/FormComponents';
 import { SuccessMessage, ErrorMessage } from '../components/common/FeedbackMessages';
 import { I18nManager } from '../i18n';
 import { RootStackParamList } from '../types/navigation';
+import { useCompanySettings } from '../hooks/useCompanySettings';
+import { DEFAULT_COMPANY_INFO } from '../constants/company';
 
 /**
  * Settings data interface
@@ -108,6 +112,17 @@ export default function SettingsScreen() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Company settings
+  const companySettings = useCompanySettings();
+  const [tempCompanyName, setTempCompanyName] = useState('');
+
+  // Initialize temp company name when company settings load
+  React.useEffect(() => {
+    if (!companySettings.isLoading) {
+      setTempCompanyName(companySettings.settings.name || '');
+    }
+  }, [companySettings.isLoading, companySettings.settings.name]);
+
   /**
    * Refresh settings data
    */
@@ -185,6 +200,139 @@ export default function SettingsScreen() {
             setHasChanges(true);
             setMessage({ type: 'success', text: t('settings.reset.success') });
           }
+        },
+      ]
+    );
+  };
+
+  /**
+   * Handle company name save
+   */
+  const handleSaveCompanyName = async () => {
+    if (tempCompanyName.trim() === companySettings.settings.name) {
+      return; // No change
+    }
+
+    const success = await companySettings.updateSettings({
+      name: tempCompanyName.trim() || undefined,
+    });
+
+    if (success) {
+      setMessage({ type: 'success', text: 'Company name updated successfully' });
+    } else {
+      setMessage({ type: 'error', text: 'Failed to update company name' });
+    }
+  };
+
+  /**
+   * Handle logo selection from gallery
+   */
+  const handleSelectLogo = async () => {
+    try {
+      // Request permission to access media library
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (!permissionResult.granted) {
+        Alert.alert(
+          'Permission Required',
+          'Please grant permission to access your photo library to select a logo.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1], // Square aspect ratio for logo
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const success = await companySettings.updateSettings({
+          logoUri: result.assets[0].uri,
+          logoSource: 'gallery',
+        });
+
+        if (success) {
+          setMessage({ type: 'success', text: 'Logo updated successfully' });
+        } else {
+          setMessage({ type: 'error', text: 'Failed to update logo' });
+        }
+      }
+    } catch (error) {
+      console.error('Error selecting logo:', error);
+      setMessage({ type: 'error', text: 'Failed to select logo' });
+    }
+  };
+
+  /**
+   * Handle logo capture from camera
+   */
+  const handleCaptureLogo = async () => {
+    try {
+      // Request permission to access camera
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (!permissionResult.granted) {
+        Alert.alert(
+          'Permission Required',
+          'Please grant permission to access your camera to take a photo.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      // Launch camera
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1], // Square aspect ratio for logo
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const success = await companySettings.updateSettings({
+          logoUri: result.assets[0].uri,
+          logoSource: 'camera',
+        });
+
+        if (success) {
+          setMessage({ type: 'success', text: 'Logo updated successfully' });
+        } else {
+          setMessage({ type: 'error', text: 'Failed to update logo' });
+        }
+      }
+    } catch (error) {
+      console.error('Error capturing logo:', error);
+      setMessage({ type: 'error', text: 'Failed to capture logo' });
+    }
+  };
+
+  /**
+   * Handle logo removal
+   */
+  const handleRemoveLogo = async () => {
+    Alert.alert(
+      'Remove Logo',
+      'Are you sure you want to remove the custom logo? This will restore the default appearance.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            const success = await companySettings.updateSettings({
+              logoUri: undefined,
+              logoSource: 'default',
+            });
+
+            if (success) {
+              setMessage({ type: 'success', text: 'Logo removed successfully' });
+            } else {
+              setMessage({ type: 'error', text: 'Failed to remove logo' });
+            }
+          },
         },
       ]
     );
@@ -278,6 +426,94 @@ export default function SettingsScreen() {
           )}
         </View>
       )}
+
+      {/* Company Settings */}
+      <FormSection title="Company Settings">
+        {/* Company Name */}
+        <View style={styles.settingRowVertical}>
+          <Text style={styles.settingLabel}>Company Name</Text>
+          <Text style={styles.settingDescription}>
+            Customize your company name displayed throughout the app
+          </Text>
+          <View style={styles.companyNameContainer}>
+            <FormField
+              label=""
+              value={tempCompanyName}
+              onChangeText={setTempCompanyName}
+              placeholder={DEFAULT_COMPANY_INFO.name}
+              style={styles.companyNameInput}
+            />
+            <TouchableOpacity
+              style={[
+                styles.saveButton,
+                tempCompanyName.trim() === companySettings.settings.name && styles.saveButtonDisabled,
+              ]}
+              onPress={handleSaveCompanyName}
+              disabled={tempCompanyName.trim() === companySettings.settings.name}
+            >
+              <Text style={[
+                styles.saveButtonText,
+                tempCompanyName.trim() === companySettings.settings.name && styles.saveButtonTextDisabled,
+              ]}>
+                Save
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.currentValue}>
+            Current: {companySettings.getEffectiveName(DEFAULT_COMPANY_INFO.name)}
+          </Text>
+        </View>
+
+        {/* Company Logo */}
+        <View style={styles.settingRowVertical}>
+          <Text style={styles.settingLabel}>Company Logo</Text>
+          <Text style={styles.settingDescription}>
+            Upload or capture a custom logo for your company
+          </Text>
+          
+          {/* Logo Preview */}
+          <View style={styles.logoContainer}>
+            {companySettings.hasCustomLogo() ? (
+              <Image
+                source={{ uri: companySettings.getEffectiveLogoUri()! }}
+                style={styles.logoPreview}
+                resizeMode="contain"
+              />
+            ) : (
+              <View style={styles.logoPlaceholder}>
+                <Text style={styles.logoPlaceholderText}>No Custom Logo</Text>
+                <Text style={styles.logoPlaceholderSubtext}>Default appearance will be used</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Logo Actions */}
+          <View style={styles.logoActions}>
+            <TouchableOpacity
+              style={styles.logoActionButton}
+              onPress={handleSelectLogo}
+            >
+              <Text style={styles.logoActionButtonText}>Select from Gallery</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.logoActionButton}
+              onPress={handleCaptureLogo}
+            >
+              <Text style={styles.logoActionButtonText}>Take Photo</Text>
+            </TouchableOpacity>
+            
+            {companySettings.hasCustomLogo() && (
+              <TouchableOpacity
+                style={[styles.logoActionButton, styles.logoRemoveButton]}
+                onPress={handleRemoveLogo}
+              >
+                <Text style={[styles.logoActionButtonText, styles.logoRemoveButtonText]}>Remove Logo</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </FormSection>
 
       {/* Language & Region Settings */}
       <FormSection title={t('settings.language.title')}>
@@ -491,6 +727,107 @@ const styles = StyleSheet.create({
   },
   pickerContainer: {
     marginTop: 8,
+  },
+  
+  // Company settings styles
+  companyNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginTop: 8,
+    gap: 12,
+  },
+  companyNameInput: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  saveButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    minWidth: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButtonDisabled: {
+    backgroundColor: theme.colors.text + '30',
+  },
+  saveButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  saveButtonTextDisabled: {
+    color: theme.colors.text + '60',
+  },
+  currentValue: {
+    fontSize: 12,
+    color: theme.colors.text,
+    opacity: 0.6,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  logoContainer: {
+    marginTop: 12,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  logoPreview: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.text + '20',
+  },
+  logoPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: theme.colors.text + '20',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.text + '05',
+  },
+  logoPlaceholderText: {
+    fontSize: 11,
+    color: theme.colors.text,
+    opacity: 0.6,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  logoPlaceholderSubtext: {
+    fontSize: 9,
+    color: theme.colors.text,
+    opacity: 0.4,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  logoActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+  },
+  logoActionButton: {
+    backgroundColor: theme.colors.accent,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  logoActionButtonText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  logoRemoveButton: {
+    backgroundColor: '#DC3545',
+  },
+  logoRemoveButtonText: {
+    color: 'white',
   },
   
   // Actions styles

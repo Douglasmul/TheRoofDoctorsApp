@@ -5,10 +5,12 @@
  * © 2025 The Roof Doctors
  */
 
+import { companySettingsService } from '../services/CompanySettingsService';
+
 /**
- * Company information and contact details
+ * Default company information and contact details
  */
-export const COMPANY_INFO = {
+export const DEFAULT_COMPANY_INFO = {
   /** Company name */
   name: 'The Roof Doctors',
   
@@ -53,6 +55,43 @@ export const COMPANY_INFO = {
 } as const;
 
 /**
+ * Dynamic company information that respects custom settings
+ */
+export const COMPANY_INFO = {
+  ...DEFAULT_COMPANY_INFO,
+  
+  /** Get effective company name (custom or default) */
+  get name() {
+    return companySettingsService.getEffectiveName(DEFAULT_COMPANY_INFO.name);
+  },
+  
+  /** Get effective copyright notice with custom name */
+  get copyright() {
+    const effectiveName = companySettingsService.getEffectiveName(DEFAULT_COMPANY_INFO.name);
+    return `© 2025 ${effectiveName}`;
+  },
+  
+  /** Get custom logo URI if available */
+  get logoUri() {
+    return companySettingsService.getEffectiveLogoUri();
+  },
+  
+  /** Check if custom logo is set */
+  get hasCustomLogo() {
+    return companySettingsService.hasCustomLogo();
+  },
+  
+  /** Get app display name with custom company name */
+  get app() {
+    const effectiveName = companySettingsService.getEffectiveName(DEFAULT_COMPANY_INFO.name);
+    return {
+      ...DEFAULT_COMPANY_INFO.app,
+      displayName: effectiveName,
+    };
+  },
+};
+
+/**
  * Legal text constants
  */
 export const LEGAL_TEXT = {
@@ -66,7 +105,7 @@ export const LEGAL_TEXT = {
   dataRetention: 'Measurement data is retained for compliance and quality assurance purposes.',
   
   /** Support information */
-  supportInfo: `For technical support, please contact ${COMPANY_INFO.legal.supportEmail} or call ${COMPANY_INFO.legal.phone}.`,
+  supportInfo: `For technical support, please contact ${DEFAULT_COMPANY_INFO.legal.supportEmail} or call ${DEFAULT_COMPANY_INFO.legal.phone}.`,
 } as const;
 
 export default COMPANY_INFO;
