@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COMPANY_INFO } from '../constants/company';
 import { useCompanyBranding } from '../hooks/useCompanyBranding';
+import EnhancedMainMenu from '../components/EnhancedMainMenu';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -10,6 +11,9 @@ export default function HomeScreen() {
   
   // Only show testing menu in development mode by default
   const [showTestingMenu, setShowTestingMenu] = useState(__DEV__ || false);
+
+  // Check if we should show the enhanced menu vs testing menu
+  const shouldShowEnhancedMenu = !showTestingMenu;
 
   // Testing screens organized by category
   const testingScreens = {
@@ -61,61 +65,69 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.container}>
-      {/* Company Header with Logo and Name */}
-      <View style={styles.companyHeader}>
-        {companyInfo.logoUri && (
-          <Image source={{ uri: companyInfo.logoUri }} style={styles.companyLogo} />
-        )}
-        <Text style={styles.header}>{companyInfo.name}</Text>
-        {companyInfo.hasCustomBranding && (
-          <Text style={styles.brandingIndicator}>Custom Branding</Text>
-        )}
-      </View>
-      <Text style={styles.subheader}>Welcome to your enterprise roofing assistant.</Text>
-      
-      {/* Main App Buttons */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate('MeasureRoof' as never)}
-        >
-          <Text style={styles.buttonText}>Measure Roof</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate('Quote' as never)}
-        >
-          <Text style={styles.buttonText}>Get a Quote</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Testing Menu Toggle */}
-      <TouchableOpacity
-        style={styles.testingToggle}
-        onPress={() => setShowTestingMenu(!showTestingMenu)}
-      >
-        <Text style={styles.testingToggleText}>
-          {showTestingMenu ? '▼ Hide Testing Menu' : '▶ Show Testing Menu'}
-        </Text>
-      </TouchableOpacity>
-
-      {/* Testing Menu */}
-      {showTestingMenu && (
-        <View style={styles.testingMenu}>
-          <Text style={styles.testingMenuTitle}>🧪 Screen Testing Navigation</Text>
-          <Text style={styles.testingMenuSubtitle}>Access all screens for testing purposes</Text>
+    <>
+      {shouldShowEnhancedMenu ? (
+        /* Enhanced Main Menu */
+        <EnhancedMainMenu />
+      ) : (
+        /* Legacy Testing Menu */
+        <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.container}>
+          {/* Company Header with Logo and Name */}
+          <View style={styles.companyHeader}>
+            {companyInfo.logoUri && (
+              <Image source={{ uri: companyInfo.logoUri }} style={styles.companyLogo} />
+            )}
+            <Text style={styles.header}>{companyInfo.name}</Text>
+            {companyInfo.hasCustomBranding && (
+              <Text style={styles.brandingIndicator}>Custom Branding</Text>
+            )}
+          </View>
+          <Text style={styles.subheader}>Welcome to your enterprise roofing assistant.</Text>
           
-          {Object.entries(testingScreens).map(([category, screens]) =>
-            renderTestingCategory(category, screens)
-          )}
-          
-          <Text style={styles.testingNote}>
-            📝 Note: This testing menu should be hidden in production builds
-          </Text>
-        </View>
+          {/* Main App Buttons */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => navigation.navigate('MeasureRoof' as never)}
+            >
+              <Text style={styles.buttonText}>Measure Roof</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => navigation.navigate('Quote' as never)}
+            >
+              <Text style={styles.buttonText}>Get a Quote</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Testing Menu */}
+          <View style={styles.testingMenu}>
+            <Text style={styles.testingMenuTitle}>🧪 Screen Testing Navigation</Text>
+            <Text style={styles.testingMenuSubtitle}>Access all screens for testing purposes</Text>
+            
+            {Object.entries(testingScreens).map(([category, screens]) =>
+              renderTestingCategory(category, screens)
+            )}
+            
+            <Text style={styles.testingNote}>
+              📝 Note: This testing menu should be hidden in production builds
+            </Text>
+          </View>
+        </ScrollView>
       )}
-    </ScrollView>
+      
+      {/* Toggle Button for Development */}
+      {__DEV__ && (
+        <TouchableOpacity
+          style={styles.devToggle}
+          onPress={() => setShowTestingMenu(!showTestingMenu)}
+        >
+          <Text style={styles.devToggleText}>
+            {showTestingMenu ? '🎨 Enhanced UI' : '🧪 Testing Menu'}
+          </Text>
+        </TouchableOpacity>
+      )}
+    </>
   );
 }
 
@@ -263,5 +275,21 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#e9ecef',
+  },
+  // Development toggle button
+  devToggle: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 50 : 30,
+    right: 20,
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    zIndex: 1000,
+  },
+  devToggleText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

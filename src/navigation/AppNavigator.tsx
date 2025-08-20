@@ -27,6 +27,8 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ReportsScreen from '../screens/ReportsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import AppointmentBookingScreen from '../screens/AppointmentBookingScreen';
+import AppointmentManagementScreen from '../screens/AppointmentManagementScreen';
 
 const Stack = createStackNavigator();
 
@@ -145,6 +147,18 @@ export default function AppNavigator() {
           name="Notifications" 
           component={NotificationsScreen} 
           options={{ title: 'Notifications' }}
+        />
+
+        {/* Appointment Screens */}
+        <Stack.Screen 
+          name="AppointmentBooking" 
+          component={AppointmentBookingScreen} 
+          options={{ title: 'Book Appointment' }}
+        />
+        <Stack.Screen 
+          name="AppointmentManagement" 
+          component={AppointmentManagementScreen} 
+          options={{ title: 'My Appointments' }}
         />
 
         {/* Reports and Data Screens */}

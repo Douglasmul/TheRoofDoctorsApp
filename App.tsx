@@ -7,17 +7,17 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { I18nextProvider } from 'react-i18next';
-import { AuthProvider } from './src/contexts/AuthContext';
+import { AppProviders } from './src/components/AppProviders';
 import AppNavigator from './src/navigation/AppNavigator';
 import i18n from './src/i18n';
 
 export default function App() {
   return (
     <I18nextProvider i18n={i18n}>
-      <AuthProvider>
+      <AppProviders>
         <StatusBar style="auto" />
         <AppNavigator />
-      </AuthProvider>
+      </AppProviders>
     </I18nextProvider>
   );
 }
