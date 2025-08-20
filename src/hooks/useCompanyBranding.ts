@@ -58,7 +58,7 @@ export function useCompanyBranding(): UseCompanyBrandingReturn {
     return unsubscribe;
   }, []);
 
-  const companyInfo = companyBrandingService.getCompanyInfo();
+  const companyInfo = useMemo(() => companyBrandingService.getCompanyInfo(), [settings]);
 
   const updateCompanyName = async (name: string): Promise<void> => {
     await companyBrandingService.updateCompanyName(name);
