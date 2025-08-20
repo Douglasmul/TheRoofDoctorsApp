@@ -240,7 +240,7 @@ export default function SettingsScreen() {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [1, 1], // Square aspect ratio for logos
+        aspect: [4, 3], // More flexible aspect ratio for logos
         quality: 0.8,
       });
 
