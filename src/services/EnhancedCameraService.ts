@@ -4,7 +4,7 @@
  * @version 1.0.0
  */
 
-import { Camera, CameraType, FlashMode } from 'expo-camera';
+import { CameraView, CameraViewRef, CameraType, FlashMode, Camera } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -77,7 +77,7 @@ export interface CameraState {
 }
 
 export class EnhancedCameraService {
-  private cameraRef: Camera | null = null;
+  private cameraRef: CameraViewRef | null = null;
   private state: CameraState = {
     isReady: false,
     hasPermission: false,
@@ -122,7 +122,7 @@ export class EnhancedCameraService {
   /**
    * Set camera reference
    */
-  setCameraRef(ref: Camera | null): void {
+  setCameraRef(ref: CameraViewRef | null): void {
     this.cameraRef = ref;
     if (ref) {
       this.loadCameraCapabilities();
@@ -176,10 +176,10 @@ export class EnhancedCameraService {
     }
 
     try {
-      const photo = await this.cameraRef.takePictureAsync({
+      const photo = await this.cameraRef.takePicture({
         quality: this.getQualityFromPictureSize(this.state.currentSettings.pictureSize),
         exif: true,
-        skipProcessing: false,
+        base64: false,
       });
 
       const metadata: PhotoMetadata = {
@@ -314,15 +314,15 @@ export class EnhancedCameraService {
     let newMode: FlashMode;
 
     switch (currentMode) {
-      case FlashMode.off:
-        newMode = FlashMode.on;
+      case 'off':
+        newMode = 'on';
         break;
-      case FlashMode.on:
-        newMode = FlashMode.auto;
+      case 'on':
+        newMode = 'auto';
         break;
-      case FlashMode.auto:
+      case 'auto':
       default:
-        newMode = FlashMode.off;
+        newMode = 'off';
         break;
     }
 
@@ -334,7 +334,7 @@ export class EnhancedCameraService {
    */
   async optimizeForMeasurement(): Promise<void> {
     const optimalSettings: Partial<CameraSettings> = {
-      flashMode: FlashMode.auto,
+      flashMode: 'auto',
       autoFocus: true,
       exposureMode: 'auto',
       whiteBalance: 'auto',
@@ -352,21 +352,21 @@ export class EnhancedCameraService {
     switch (lightingCondition) {
       case 'bright':
         return {
-          flashMode: FlashMode.off,
+          flashMode: 'off',
           exposureMode: 'auto',
           iso: 100,
           whiteBalance: 'sunny',
         };
       case 'normal':
         return {
-          flashMode: FlashMode.auto,
+          flashMode: 'auto',
           exposureMode: 'auto',
           iso: 200,
           whiteBalance: 'auto',
         };
       case 'low':
         return {
-          flashMode: FlashMode.on,
+          flashMode: 'on',
           exposureMode: 'manual',
           exposureValue: 0.5,
           iso: 800,
@@ -374,7 +374,7 @@ export class EnhancedCameraService {
         };
       case 'very_low':
         return {
-          flashMode: FlashMode.on,
+          flashMode: 'on',
           exposureMode: 'manual',
           exposureValue: 1.0,
           iso: 1600,
@@ -446,7 +446,7 @@ export class EnhancedCameraService {
 
   private getDefaultSettings(): CameraSettings {
     return {
-      flashMode: FlashMode.auto,
+      flashMode: 'auto',
       autoFocus: true,
       exposureMode: 'auto',
       exposureValue: 0,
@@ -490,7 +490,7 @@ export class EnhancedCameraService {
   private async getFileSize(uri: string): Promise<number> {
     try {
       const info = await FileSystem.getInfoAsync(uri);
-      return info.size || 0;
+      return info.exists ? info.size : 0;
     } catch (error) {
       return 0;
     }
