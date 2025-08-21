@@ -50,7 +50,6 @@ export default function HomeScreen() {
   const handleMenuAction = (item: { name: string; screen?: string; action?: string }) => {
     if (item.action === 'logout') {
       // Handle logout action - you might want to add actual logout logic here
-      console.log('Logout pressed - implement logout logic');
   const handleMenuAction = async (item: { name: string; screen?: string; action?: string }) => {
     if (item.action === 'logout') {
       // Handle logout action: clear authentication tokens and user state
