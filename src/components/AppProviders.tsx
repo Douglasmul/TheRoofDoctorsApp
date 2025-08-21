@@ -1,5 +1,5 @@
 /**
- * @fileoverview App wrapper with appointment system integration
+ * @fileoverview App wrapper with all system integrations
  * @version 1.0.0
  * © 2025 The Roof Doctors
  */
@@ -7,6 +7,7 @@
 import React from 'react';
 import { AuthProvider } from '../contexts/AuthContext';
 import { AppointmentProvider } from '../contexts/AppointmentContext';
+import { SecurityProvider } from '../contexts/SecurityContext';
 
 interface AppProvidersProps {
   children: React.ReactNode;
@@ -18,9 +19,11 @@ interface AppProvidersProps {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <AuthProvider>
-      <AppointmentProvider>
-        {children}
-      </AppointmentProvider>
+      <SecurityProvider>
+        <AppointmentProvider>
+          {children}
+        </AppointmentProvider>
+      </SecurityProvider>
     </AuthProvider>
   );
 }

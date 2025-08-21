@@ -194,6 +194,18 @@ export default function EnhancedMainMenu() {
           accessibilityHint: 'Manage app settings and preferences'
         },
         {
+          id: 'security_settings',
+          title: 'Security',
+          subtitle: 'Privacy & protection',
+          icon: '🔒',
+          screen: 'SecuritySettings',
+          category: 'profile',
+          color: '#dc2626',
+          priority: 3,
+          accessibilityLabel: 'Security Settings',
+          accessibilityHint: 'Manage security settings and two-factor authentication'
+        },
+        {
           id: 'notifications',
           title: 'Notifications',
           subtitle: 'Alerts & messages',
@@ -201,7 +213,7 @@ export default function EnhancedMainMenu() {
           screen: 'Notifications',
           category: 'profile',
           color: '#ef4444',
-          priority: 3,
+          priority: 4,
           accessibilityLabel: 'Notifications',
           accessibilityHint: 'View notifications and alerts'
         }

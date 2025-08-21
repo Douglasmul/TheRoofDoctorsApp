@@ -29,6 +29,7 @@ import ReportsScreen from '../screens/ReportsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import AppointmentBookingScreen from '../screens/AppointmentBookingScreen';
 import AppointmentManagementScreen from '../screens/AppointmentManagementScreen';
+import SecuritySettingsScreen from '../screens/SecuritySettingsScreen';
 
 const Stack = createStackNavigator();
 
@@ -142,6 +143,11 @@ export default function AppNavigator() {
           name="Settings" 
           component={SettingsScreen} 
           options={{ title: 'Settings' }}
+        />
+        <Stack.Screen 
+          name="SecuritySettings" 
+          component={SecuritySettingsScreen} 
+          options={{ title: 'Security Settings' }}
         />
         <Stack.Screen 
           name="Notifications" 
