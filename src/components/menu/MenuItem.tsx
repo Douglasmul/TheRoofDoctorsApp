@@ -39,6 +39,9 @@ export const MenuItem: React.FC<MenuItemProps> = ({
   testID,
   accessibilityLabel,
 }) => {
+  // Separate animated values for different properties to avoid conflicts:
+  // scaleAnim: For transform animations (can use native driver)
+  // pressAnim: For backgroundColor animation (requires JS thread)
   const [scaleAnim] = useState(new Animated.Value(1));
   const [pressAnim] = useState(new Animated.Value(0));
 
@@ -46,14 +49,14 @@ export const MenuItem: React.FC<MenuItemProps> = ({
     Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: 0.98,
-        useNativeDriver: true,
+        useNativeDriver: true, // Transform animations can use native driver
         tension: 300,
         friction: 10,
       }),
       Animated.timing(pressAnim, {
         toValue: 1,
         duration: theme.animations.duration.fast,
-        useNativeDriver: false,
+        useNativeDriver: false, // backgroundColor requires JS thread
       }),
     ]).start();
   };
@@ -62,14 +65,14 @@ export const MenuItem: React.FC<MenuItemProps> = ({
     Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: 1,
-        useNativeDriver: true,
+        useNativeDriver: true, // Transform animations can use native driver
         tension: 300,
         friction: 10,
       }),
       Animated.timing(pressAnim, {
         toValue: 0,
         duration: theme.animations.duration.fast,
-        useNativeDriver: false,
+        useNativeDriver: false, // backgroundColor requires JS thread
       }),
     ]).start();
   };

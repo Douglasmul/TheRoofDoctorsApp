@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  LayoutAnimation,
   Platform,
   UIManager,
   AccessibilityInfo,
@@ -19,10 +18,8 @@ import {
 import { theme } from '../../theme/theme';
 import { responsiveStyle, layout } from '../../utils/responsive';
 
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+// Note: setLayoutAnimationEnabledExperimental is deprecated in React Native New Architecture
+// Using Animated API instead for better compatibility
 
 interface MenuSectionProps {
   title: string;
@@ -43,28 +40,24 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [rotateAnim] = useState(new Animated.Value(defaultExpanded ? 1 : 0));
+  const [heightAnim] = useState(new Animated.Value(defaultExpanded ? 1 : 0));
 
   const toggleExpanded = () => {
     const newExpanded = !isExpanded;
     
-    // Smooth layout animation
-    LayoutAnimation.configureNext({
-      duration: theme.animations.duration.normal,
-      create: {
-        type: LayoutAnimation.Types.easeInEaseOut,
-        property: LayoutAnimation.Properties.opacity,
-      },
-      update: {
-        type: LayoutAnimation.Types.easeInEaseOut,
-      },
-    });
-    
-    // Rotate animation for chevron
-    Animated.timing(rotateAnim, {
-      toValue: newExpanded ? 1 : 0,
-      duration: theme.animations.duration.normal,
-      useNativeDriver: true,
-    }).start();
+    // Animated expand/collapse compatible with New Architecture
+    Animated.parallel([
+      Animated.timing(heightAnim, {
+        toValue: newExpanded ? 1 : 0,
+        duration: theme.animations.duration.normal,
+        useNativeDriver: false, // Height animation requires layout changes
+      }),
+      Animated.timing(rotateAnim, {
+        toValue: newExpanded ? 1 : 0,
+        duration: theme.animations.duration.normal,
+        useNativeDriver: true, // Transform animation can use native driver
+      }),
+    ]).start();
     
     setIsExpanded(newExpanded);
     
@@ -154,12 +147,24 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
       </TouchableOpacity>
       
       {isExpanded && (
-        <View 
-          style={styles.content}
+        <Animated.View 
+          style={[
+            styles.content,
+            {
+              opacity: heightAnim,
+              transform: [{ 
+                scaleY: heightAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.95, 1],
+                  extrapolate: 'clamp',
+                })
+              }],
+            }
+          ]}
           accessibilityRole="list"
         >
           {children}
-        </View>
+        </Animated.View>
       )}
     </View>
   );
