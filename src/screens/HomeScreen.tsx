@@ -51,7 +51,17 @@ export default function HomeScreen() {
     if (item.action === 'logout') {
       // Handle logout action - you might want to add actual logout logic here
       console.log('Logout pressed - implement logout logic');
-      // For demo purposes, just show an alert or navigate to login
+  const handleMenuAction = async (item: { name: string; screen?: string; action?: string }) => {
+    if (item.action === 'logout') {
+      // Handle logout action: clear authentication tokens and user state
+      try {
+        await AsyncStorage.removeItem('authToken');
+        await AsyncStorage.removeItem('user');
+        // Add any other keys that need to be cleared on logout
+        console.log('Logout successful: tokens cleared');
+      } catch (error) {
+        console.error('Error clearing tokens on logout:', error);
+      }
       navigation.navigate('Login' as never);
     } else if (item.screen) {
       navigation.navigate(item.screen as never);
