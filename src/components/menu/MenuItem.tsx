@@ -4,7 +4,7 @@
  * @version 1.0.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -44,9 +44,38 @@ export const MenuItem: React.FC<MenuItemProps> = ({
   // pressAnim: For backgroundColor animation (requires JS thread)
   const [scaleAnim] = useState(new Animated.Value(1));
   const [pressAnim] = useState(new Animated.Value(0));
+  
+  // Animation state tracking to prevent conflicts and overlapping animations
+  // This prevents the runtime error when JS-driven animation attempts to run
+  // on a node that has been moved to 'native' by useNativeDriver: true
+  const animationStateRef = useRef({
+    isAnimating: false,
+    currentAnimations: [] as Animated.CompositeAnimation[],
+  });
+
+  /**
+   * Safely stops all running animations before starting new ones
+   * This prevents animation conflicts and runtime errors in Hermes engine
+   */
+  const stopCurrentAnimations = () => {
+    animationStateRef.current.currentAnimations.forEach(animation => {
+      try {
+        animation.stop();
+      } catch (error) {
+        // Silently handle any stop errors - animation may have already completed
+        console.warn('Animation stop warning:', error);
+      }
+    });
+    animationStateRef.current.currentAnimations = [];
+    animationStateRef.current.isAnimating = false;
+  };
 
   const handlePressIn = () => {
-    Animated.parallel([
+    // Stop any existing animations to prevent conflicts
+    stopCurrentAnimations();
+    
+    // Create new animation with proper driver separation
+    const pressInAnimation = Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: 0.98,
         useNativeDriver: true, // Transform animations can use native driver
@@ -58,11 +87,27 @@ export const MenuItem: React.FC<MenuItemProps> = ({
         duration: theme.animations.duration.fast,
         useNativeDriver: false, // backgroundColor requires JS thread
       }),
-    ]).start();
+    ]);
+
+    // Track animation state
+    animationStateRef.current.isAnimating = true;
+    animationStateRef.current.currentAnimations = [pressInAnimation];
+
+    pressInAnimation.start((finished) => {
+      // Only update state if animation completed successfully
+      if (finished) {
+        animationStateRef.current.isAnimating = false;
+        animationStateRef.current.currentAnimations = [];
+      }
+    });
   };
 
   const handlePressOut = () => {
-    Animated.parallel([
+    // Stop any existing animations to prevent conflicts
+    stopCurrentAnimations();
+    
+    // Create new animation with proper driver separation
+    const pressOutAnimation = Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: 1,
         useNativeDriver: true, // Transform animations can use native driver
@@ -74,7 +119,19 @@ export const MenuItem: React.FC<MenuItemProps> = ({
         duration: theme.animations.duration.fast,
         useNativeDriver: false, // backgroundColor requires JS thread
       }),
-    ]).start();
+    ]);
+
+    // Track animation state
+    animationStateRef.current.isAnimating = true;
+    animationStateRef.current.currentAnimations = [pressOutAnimation];
+
+    pressOutAnimation.start((finished) => {
+      // Only update state if animation completed successfully
+      if (finished) {
+        animationStateRef.current.isAnimating = false;
+        animationStateRef.current.currentAnimations = [];
+      }
+    });
   };
 
   const handlePress = () => {
