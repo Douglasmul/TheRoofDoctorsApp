@@ -30,6 +30,7 @@ export default function HomeScreen() {
     ],
     'Core Features': [
       { name: 'AR Camera', screen: 'RoofARCamera' },
+      { name: '3D Roof Viewer', screen: 'Roof3DVisualization' },
       { name: 'Welcome', screen: 'OpenApp' }
     ],
     'Business': [

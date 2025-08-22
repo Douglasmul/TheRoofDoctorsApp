@@ -49,6 +49,22 @@ export interface RoofPlane {
   confidence: number;
   /** Material classification if detected */
   material?: 'shingle' | 'tile' | 'metal' | 'flat' | 'unknown';
+  /** 3D visualization metadata */
+  visualization3D?: {
+    /** Whether this plane has been converted to 3D geometry */
+    hasGeometry: boolean;
+    /** Reference to 3D geometry ID if created */
+    geometryId?: string;
+    /** 3D rendering preferences */
+    renderPreferences?: {
+      /** Material override for 3D rendering */
+      materialOverride?: string;
+      /** Extrusion height for flat surfaces */
+      extrusionHeight?: number;
+      /** Level of detail for 3D mesh */
+      levelOfDetail?: 'low' | 'medium' | 'high';
+    };
+  };
 }
 
 /**

@@ -885,6 +885,18 @@ export default function RoofARCameraScreen() {
           </Text>
         </TouchableOpacity>
 
+        {/* 3D Visualization Button - only show if we have captured planes */}
+        {capturedPlanes.length > 0 && (
+          <TouchableOpacity
+            style={[styles.controlButton, styles.view3DButton]}
+            onPress={() => navigation.navigate('Roof3DVisualization', { roofPlanes: capturedPlanes })}
+            accessibilityLabel="View in 3D"
+            accessibilityHint="Opens 3D visualization of captured roof planes"
+          >
+            <Text style={styles.controlButtonText}>View 3D</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity
           style={[styles.controlButton, styles.completeButton]}
           onPress={completeMeasurement}
@@ -1171,6 +1183,9 @@ const styles = StyleSheet.create({
   },
   completeButton: {
     backgroundColor: '#4CAF50',
+  },
+  view3DButton: {
+    backgroundColor: '#9C27B0', // Purple color for 3D visualization
   },
   controlButtonText: {
     color: 'white',
