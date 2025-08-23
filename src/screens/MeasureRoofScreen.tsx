@@ -15,6 +15,10 @@ export default function MeasureRoofScreen() {
     navigation.navigate('ManualMeasurement');
   };
 
+  const start3DMeasurement = () => {
+    navigation.navigate('Measurement3D' as never);
+  };
+
   if (!permission) {
     return (
       <View style={styles.container}>
@@ -58,6 +62,16 @@ export default function MeasureRoofScreen() {
         </Text>
         <TouchableOpacity style={styles.primaryButton} onPress={startManualMeasurement}>
           <Text style={styles.primaryButtonText}>Start Manual Measurement</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.optionContainer}>
+        <Text style={styles.optionTitle}>3D Measurement</Text>
+        <Text style={styles.optionDescription}>
+          Visualize and interact with 3D roof geometry. Import existing measurements or create new 3D models for advanced analysis.
+        </Text>
+        <TouchableOpacity style={styles.primaryButton} onPress={start3DMeasurement}>
+          <Text style={styles.primaryButtonText}>Start 3D Measurement</Text>
         </TouchableOpacity>
       </View>
 
