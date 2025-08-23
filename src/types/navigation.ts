@@ -33,6 +33,10 @@ export type RootStackParamList = {
     isManual?: boolean; 
     validationResult?: any; 
   };
+  Measurement3D: {
+    measurement?: RoofMeasurement;
+    sessionId?: string;
+  };
   Quote: { 
     measurement?: RoofMeasurement; 
     quoteId?: string; 
