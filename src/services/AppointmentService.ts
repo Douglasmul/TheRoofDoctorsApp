@@ -114,7 +114,14 @@ class AppointmentService {
       const encrypted = btoa(data);
       
       // Store encryption key securely
-      await SecureStore.setItemAsync(`appointment_key_${Date.now()}`, keyBase64);
+      const keyHex = Array.from(key).map(byte => byte.toString(16).padStart(2, '0')).join('');
+      
+      // For demo purposes, using base64 encoding
+      // In production, implement proper AES encryption
+      const encrypted = btoa(data);
+      
+      // Store encryption key securely
+      await SecureStore.setItemAsync(`appointment_key_${Date.now()}`, keyHex);
       
       return encrypted;
     } catch (error) {
