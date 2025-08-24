@@ -32,7 +32,7 @@ This document outlines the implementation of 3D geometry support for the measure
 - **Documentation**: [expo-three docs](https://docs.expo.dev/versions/latest/sdk/gl-view/)
 
 ### three.js
-- **Version**: 0.179.1
+- **Version**: 0.166.0
 - **Purpose**: Core 3D graphics library
 - **Features Used**: Geometry, materials, lighting, cameras
 
@@ -40,8 +40,8 @@ This document outlines the implementation of 3D geometry support for the measure
 ```json
 {
   "expo-three": "^8.0.0",
-  "three": "^0.179.1",
-  "@types/three": "^0.179.0",
+  "three": "^0.166.0",
+  "@types/three": "^0.166.0",
   "expo-gl": "~15.1.7",
   "expo-asset": "~11.1.7",
   "expo-font": "~13.3.2",
