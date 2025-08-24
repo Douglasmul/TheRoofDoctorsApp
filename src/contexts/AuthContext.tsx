@@ -17,6 +17,7 @@ import {
   AuthError,
 } from '../types/auth';
 import { authService } from '../services/AuthService';
+import { AuthLoadingScreen } from '../components/auth/AuthLoadingScreen';
 
 // Auth Actions
 type AuthAction =
@@ -340,7 +341,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {state.isLoading ? <AuthLoadingScreen /> : children}
     </AuthContext.Provider>
   );
 }
