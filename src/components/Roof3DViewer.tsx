@@ -373,12 +373,18 @@ export const Roof3DViewer: React.FC<Roof3DViewerProps> = ({
     scene: THREE.Scene,
     camera: THREE.PerspectiveCamera
   ) => {
+    // Get auto-rotation speed from config or use default
+    const autoRotationSpeed =
+      (config && typeof config.autoRotationSpeed === 'number'
+        ? config.autoRotationSpeed
+        : DEFAULT_AUTO_ROTATION_SPEED);
+
     const animate = () => {
       frameRef.current = requestAnimationFrame(animate);
       
       // Simple auto-rotation for demo purposes
       if (controlsEnabled && scene.children.length > 0) {
-        scene.rotation.y += 0.005;
+        scene.rotation.y += autoRotationSpeed;
       }
 
       renderer.render(scene, camera);
