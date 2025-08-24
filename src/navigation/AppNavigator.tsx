@@ -14,6 +14,7 @@ import EnhancedManualPointSelectionCamera from '../screens/EnhancedManualPointSe
 import CalibrationScreen from '../screens/CalibrationScreen';
 import ProfessionalFeaturesSummary from '../screens/ProfessionalFeaturesSummary';
 import MeasurementReviewScreen from '../screens/MeasurementReviewScreen';
+import Measurement3DScreen from '../screens/Measurement3DScreen';
 import SignupScreen from '../screens/SignupScreen';
 import LoginScreen from '../screens/LoginScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
@@ -102,6 +103,11 @@ export default function AppNavigator() {
           name="MeasurementReview" 
           component={MeasurementReviewScreen} 
           options={{ title: 'Measurement Review' }}
+        />
+        <Stack.Screen 
+          name="Measurement3D" 
+          component={Measurement3DScreen} 
+          options={{ title: '3D Measurement' }}
         />
         <Stack.Screen 
           name="Quote" 

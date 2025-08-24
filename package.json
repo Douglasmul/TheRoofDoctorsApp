@@ -1,3 +1,4 @@
+copilot/fix-23e67fc3-6d4f-45c1-8f05-d18ebe33cb5c
 {
   "name": "TheRoofDoctorsApp",
   "version": "1.0.0",
@@ -61,3 +62,4 @@
     "three": "^0.179.1"
   }
 }
+
