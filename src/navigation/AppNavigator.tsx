@@ -28,6 +28,7 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ReportsScreen from '../screens/ReportsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import Roof3DVisualizationScreen from '../screens/Roof3DVisualizationScreen';
 
 const Stack = createStackNavigator();
 
@@ -112,6 +113,16 @@ export default function AppNavigator() {
           name="Quote" 
           component={QuoteScreen} 
           options={{ title: 'Get a Quote' }}
+        />
+        
+        {/* 3D Visualization Screens */}
+        <Stack.Screen 
+          name="Roof3DVisualization" 
+          component={Roof3DVisualizationScreen} 
+          options={{ 
+            title: '3D Roof Viewer',
+            headerShown: false, // Custom header in component
+          }}
         />
         
         {/* Authentication Screens */}

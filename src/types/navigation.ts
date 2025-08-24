@@ -3,8 +3,9 @@
  * @version 1.0.0
  */
 
-import { RoofMeasurement } from '../types/measurement';
+import { RoofMeasurement, RoofPlane } from '../types/measurement';
 import { Quote } from '../types/quote';
+import { RoofModel3D, RoofGeometry3D } from '../types/geometry3d';
 
 export type RootStackParamList = {
   // Main App Screens
@@ -41,6 +42,13 @@ export type RootStackParamList = {
     measurement?: RoofMeasurement; 
     quoteId?: string; 
     savedFromMeasurement?: boolean; 
+  };
+  
+  // 3D Visualization Screens
+  Roof3DVisualization: {
+    roofPlanes?: RoofPlane[];
+    model?: RoofModel3D;
+    geometry?: RoofGeometry3D;
   };
   
   // Authentication Screens
