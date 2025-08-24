@@ -93,7 +93,13 @@ class AppointmentService {
       const response = await fetch(`${this.baseURL}/health`, {
         method: 'HEAD',
         timeout: 5000
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const response = await fetch(`${this.baseURL}/health`, {
+        method: 'HEAD',
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
       this.isOnline = response.ok;
     } catch {
       this.isOnline = false;
