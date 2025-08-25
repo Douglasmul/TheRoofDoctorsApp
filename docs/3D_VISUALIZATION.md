@@ -212,12 +212,14 @@ npm test -- --testPathPatterns=Geometry3DService.test.ts
 ### New Dependencies Added
 ```json
 {
-  "three": "^0.179.1",
-  "@types/three": "^0.179.0",
+  "three": "0.122.0",
+  "@types/three": "0.125.0",
   "expo-gl": "^15.1.7",
   "expo-gl-cpp": "^11.4.0"
 }
 ```
+
+**Note**: three.js is pinned to version 0.122.0 to ensure compatibility with expo-three@8.0.0 legacy loader imports.
 
 ### Integration Requirements
 - **Expo GL**: For WebGL context in React Native
