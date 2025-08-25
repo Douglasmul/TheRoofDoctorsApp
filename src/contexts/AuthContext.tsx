@@ -99,6 +99,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
+  // Defensive logging for debugging contains() errors
+  console.log('AuthProvider render - children type:', typeof children);
+  console.log('AuthProvider render - children count:', React.Children.count(children));
+  console.log('AuthProvider render - has children:', !!children);
+  console.log('AuthProvider render - loading state:', state.isLoading);
+
   // Initialize auth state from stored tokens
   useEffect(() => {
     initializeAuth();
@@ -339,11 +345,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearError,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {state.isLoading ? <AuthLoadingScreen /> : children}
-    </AuthContext.Provider>
-  );
+  // Wrap the return in try-catch to capture synchronous render errors
+  try {
+    return (
+      <AuthContext.Provider value={value}>
+        {state.isLoading ? <AuthLoadingScreen /> : children}
+      </AuthContext.Provider>
+    );
+  } catch (error) {
+    console.error('=== AuthProvider render error ===');
+    console.error('Error during AuthProvider render:', error);
+    console.error('Children at error time:', {
+      type: typeof children,
+      count: React.Children.count(children),
+      exists: !!children,
+    });
+    console.error('State at error time:', {
+      isLoading: state.isLoading,
+      isAuthenticated: state.isAuthenticated,
+      hasUser: !!state.user,
+    });
+    
+    // Re-throw to let ErrorBoundary handle it
+    throw error;
+  }
 }
 
 // Hook to use auth context

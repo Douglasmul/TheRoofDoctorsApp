@@ -1,5 +1,4 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { COMPANY_INFO } from '../constants/company';
 
@@ -34,8 +33,7 @@ const Stack = createStackNavigator();
 
 export default function AppNavigator() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
+    <Stack.Navigator initialRouteName="Home">
         {/* Main App Screens */}
         <Stack.Screen 
           name="Home" 
@@ -195,6 +193,5 @@ export default function AppNavigator() {
           options={{ title: 'Error' }}
         />
       </Stack.Navigator>
-    </NavigationContainer>
   );
 }
