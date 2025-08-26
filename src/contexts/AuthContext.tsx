@@ -154,10 +154,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await authService.login(credentials);
       
       // Store tokens securely
+      // Fix: Handle potential undefined/invalid expiresAt to prevent .contains error on Samsung devices
+      const expirationDate = (() => {
+        try {
+          if (!response.expiresAt) {
+            return new Date(Date.now() + 60 * 60 * 1000); // Default to 1 hour
+          }
+          if (response.expiresAt instanceof Date) {
+            return response.expiresAt;
+          }
+          const parsedDate = new Date(response.expiresAt);
+          if (isNaN(parsedDate.getTime())) {
+            return new Date(Date.now() + 60 * 60 * 1000); // Fallback to 1 hour for invalid dates
+          }
+          return parsedDate;
+        } catch {
+          return new Date(Date.now() + 60 * 60 * 1000); // Fallback to 1 hour on any error
+        }
+      })();
+      
       await Promise.all([
         SecureStore.setItemAsync('auth_token', response.accessToken),
         SecureStore.setItemAsync('refresh_token', response.refreshToken),
-        SecureStore.setItemAsync('token_expiration', response.expiresAt.toISOString()),
+        SecureStore.setItemAsync('token_expiration', expirationDate.toISOString()),
       ]);
 
       dispatch({
@@ -204,10 +223,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await authService.signup(credentials);
       
       // Store tokens securely
+      // Fix: Handle potential undefined/invalid expiresAt to prevent .contains error on Samsung devices
+      const expirationDate = (() => {
+        try {
+          if (!response.expiresAt) {
+            return new Date(Date.now() + 60 * 60 * 1000); // Default to 1 hour
+          }
+          if (response.expiresAt instanceof Date) {
+            return response.expiresAt;
+          }
+          const parsedDate = new Date(response.expiresAt);
+          if (isNaN(parsedDate.getTime())) {
+            return new Date(Date.now() + 60 * 60 * 1000); // Fallback to 1 hour for invalid dates
+          }
+          return parsedDate;
+        } catch {
+          return new Date(Date.now() + 60 * 60 * 1000); // Fallback to 1 hour on any error
+        }
+      })();
+      
       await Promise.all([
         SecureStore.setItemAsync('auth_token', response.accessToken),
         SecureStore.setItemAsync('refresh_token', response.refreshToken),
-        SecureStore.setItemAsync('token_expiration', response.expiresAt.toISOString()),
+        SecureStore.setItemAsync('token_expiration', expirationDate.toISOString()),
       ]);
 
       dispatch({
@@ -300,10 +338,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await authService.refreshToken(refreshToken);
       
       // Store new tokens
+      // Fix: Handle potential undefined/invalid expiresAt to prevent .contains error on Samsung devices
+      const expirationDate = (() => {
+        try {
+          if (!response.expiresAt) {
+            return new Date(Date.now() + 60 * 60 * 1000); // Default to 1 hour
+          }
+          if (response.expiresAt instanceof Date) {
+            return response.expiresAt;
+          }
+          const parsedDate = new Date(response.expiresAt);
+          if (isNaN(parsedDate.getTime())) {
+            return new Date(Date.now() + 60 * 60 * 1000); // Fallback to 1 hour for invalid dates
+          }
+          return parsedDate;
+        } catch {
+          return new Date(Date.now() + 60 * 60 * 1000); // Fallback to 1 hour on any error
+        }
+      })();
+      
       await Promise.all([
         SecureStore.setItemAsync('auth_token', response.accessToken),
         SecureStore.setItemAsync('refresh_token', response.refreshToken),
-        SecureStore.setItemAsync('token_expiration', response.expiresAt.toISOString()),
+        SecureStore.setItemAsync('token_expiration', expirationDate.toISOString()),
       ]);
 
       dispatch({
