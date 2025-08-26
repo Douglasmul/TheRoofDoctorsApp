@@ -19,6 +19,31 @@ import {
 import { authService } from '../services/AuthService';
 import { AuthLoadingScreen } from '../components/auth/AuthLoadingScreen';
 
+// Defensive programming: Add polyfill for 'contains' method if some library expects it
+// This prevents "Cannot read property 'contains' of undefined" errors
+if (typeof String.prototype.contains === 'undefined') {
+  Object.defineProperty(String.prototype, 'contains', {
+    value: function(searchString: string, position?: number) {
+      return this.includes(searchString, position);
+    },
+    enumerable: false,
+    configurable: true,
+    writable: true
+  });
+}
+
+// Add contains method to Array prototype as well (defensive programming)
+if (typeof Array.prototype.contains === 'undefined') {
+  Object.defineProperty(Array.prototype, 'contains', {
+    value: function(searchElement: any, fromIndex?: number) {
+      return this.includes(searchElement, fromIndex);
+    },
+    enumerable: false,
+    configurable: true,
+    writable: true
+  });
+}
+
 // Auth Actions
 type AuthAction =
   | { type: 'SET_LOADING'; payload: boolean }
@@ -108,41 +133,95 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       
-      const [accessToken, refreshToken] = await Promise.all([
-        SecureStore.getItemAsync('auth_token'),
-        SecureStore.getItemAsync('refresh_token'),
-      ]);
+      // Defensive programming: Add null checks and proper error handling
+      let accessToken: string | null = null;
+      let refreshToken: string | null = null;
+      
+      try {
+        // Safely get tokens with individual try-catch to isolate SecureStore issues
+        accessToken = await SecureStore.getItemAsync('auth_token');
+      } catch (error) {
+        console.warn('Error getting access token from SecureStore:', error);
+        accessToken = null;
+      }
+      
+      try {
+        refreshToken = await SecureStore.getItemAsync('refresh_token');
+      } catch (error) {
+        console.warn('Error getting refresh token from SecureStore:', error);
+        refreshToken = null;
+      }
 
-      if (accessToken && refreshToken) {
-        // Validate token and get user info
-        const user = await authService.validateToken(accessToken);
-        if (user) {
-          dispatch({
-            type: 'LOGIN_SUCCESS',
-            payload: { user, accessToken, refreshToken },
-          });
-        } else {
-          // Token is invalid, try to refresh
-          await refreshAuthToken();
+      // Ensure we have valid string tokens (not just truthy values)
+      if (accessToken && typeof accessToken === 'string' && accessToken.trim() !== '' &&
+          refreshToken && typeof refreshToken === 'string' && refreshToken.trim() !== '') {
+        
+        try {
+          // Validate token and get user info with proper error handling
+          const user = await authService.validateToken(accessToken);
+          if (user && typeof user === 'object' && user.id) {
+            dispatch({
+              type: 'LOGIN_SUCCESS',
+              payload: { user, accessToken, refreshToken },
+            });
+          } else {
+            // Token is invalid, try to refresh with defensive programming
+            try {
+              await refreshAuthToken();
+            } catch (refreshError) {
+              console.warn('Error refreshing token during initialization:', refreshError);
+              // Clear invalid tokens if refresh fails
+              await clearStoredAuth();
+            }
+          }
+        } catch (validateError) {
+          console.warn('Error validating token during initialization:', validateError);
+          // Clear potentially corrupted tokens
+          await clearStoredAuth();
         }
+      } else {
+        // No valid tokens available, ensure clean state
+        console.log('No valid stored tokens found, starting with clean auth state');
       }
     } catch (error) {
-      console.error('Error initializing auth:', error);
-      await clearStoredAuth();
+      console.error('Critical error initializing auth:', error);
+      // Ensure we clear any potentially corrupted state
+      try {
+        await clearStoredAuth();
+      } catch (clearError) {
+        console.error('Error clearing stored auth after initialization failure:', clearError);
+      }
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      // Always ensure loading state is cleared, even if there are errors
+      try {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      } catch (dispatchError) {
+        console.error('Error setting loading state to false:', dispatchError);
+        // If dispatch fails, we have a serious problem, but don't throw
+      }
     }
   };
 
   const clearStoredAuth = async () => {
     try {
-      await Promise.all([
-        SecureStore.deleteItemAsync('auth_token'),
-        SecureStore.deleteItemAsync('refresh_token'),
-        SecureStore.deleteItemAsync('token_expiration'),
-      ]);
+      // Use individual delete operations with error handling to prevent one failure from stopping others
+      const deleteOperations = [
+        { key: 'auth_token', operation: () => SecureStore.deleteItemAsync('auth_token') },
+        { key: 'refresh_token', operation: () => SecureStore.deleteItemAsync('refresh_token') },
+        { key: 'token_expiration', operation: () => SecureStore.deleteItemAsync('token_expiration') },
+      ];
+
+      for (const { key, operation } of deleteOperations) {
+        try {
+          await operation();
+        } catch (error) {
+          console.warn(`Error clearing stored auth key '${key}':`, error);
+          // Continue with other operations even if one fails
+        }
+      }
     } catch (error) {
-      console.error('Error clearing stored auth:', error);
+      console.error('Error in clearStoredAuth:', error);
+      // Don't throw - this is a cleanup operation that should be best-effort
     }
   };
 
@@ -151,14 +230,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
 
+      // Validate credentials before sending to service
+      if (!credentials || typeof credentials !== 'object') {
+        throw new Error('Invalid credentials provided');
+      }
+
+      if (!credentials.email || typeof credentials.email !== 'string' || credentials.email.trim() === '') {
+        throw new Error('Valid email is required');
+      }
+
+      if (!credentials.password || typeof credentials.password !== 'string' || credentials.password.trim() === '') {
+        throw new Error('Valid password is required');
+      }
+
       const response = await authService.login(credentials);
       
-      // Store tokens securely
-      await Promise.all([
-        SecureStore.setItemAsync('auth_token', response.accessToken),
-        SecureStore.setItemAsync('refresh_token', response.refreshToken),
-        SecureStore.setItemAsync('token_expiration', response.expiresAt.toISOString()),
-      ]);
+      // Validate response structure
+      if (!response || typeof response !== 'object' || !response.accessToken || !response.refreshToken || !response.user) {
+        throw new Error('Invalid response from login service');
+      }
+
+      // Store tokens securely with individual error handling
+      const storeOperations = [
+        { key: 'auth_token', value: response.accessToken },
+        { key: 'refresh_token', value: response.refreshToken },
+        { key: 'token_expiration', value: response.expiresAt?.toISOString?.() || new Date(Date.now() + 3600000).toISOString() },
+      ];
+
+      for (const { key, value } of storeOperations) {
+        try {
+          if (value && typeof value === 'string') {
+            await SecureStore.setItemAsync(key, value);
+          }
+        } catch (storeError) {
+          console.warn(`Error storing ${key} in SecureStore during login:`, storeError);
+          // Continue with other operations but log the issue
+        }
+      }
 
       dispatch({
         type: 'LOGIN_SUCCESS',
@@ -170,8 +278,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error) {
       const authError = error as AuthError;
-      dispatch({ type: 'SET_ERROR', payload: authError.message });
+      const errorMessage = authError?.message || 'Login failed - please try again';
+      
+      try {
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      } catch (dispatchError) {
+        console.error('Error setting error state during login:', dispatchError);
+      }
+      
       throw error;
+    } finally {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      } catch (dispatchError) {
+        console.error('Error setting loading state during login:', dispatchError);
+      }
     }
   }, []);
 
@@ -292,20 +413,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshAuthToken = useCallback(async () => {
     try {
-      const refreshToken = await SecureStore.getItemAsync('refresh_token');
-      if (!refreshToken) {
-        throw new Error('No refresh token available');
+      // Safely get refresh token with null checks
+      let refreshToken: string | null = null;
+      try {
+        refreshToken = await SecureStore.getItemAsync('refresh_token');
+      } catch (error) {
+        console.warn('Error getting refresh token from SecureStore:', error);
+        throw new Error('Failed to retrieve refresh token from secure storage');
       }
 
-      const response = await authService.refreshToken(refreshToken);
-      
-      // Store new tokens
-      await Promise.all([
-        SecureStore.setItemAsync('auth_token', response.accessToken),
-        SecureStore.setItemAsync('refresh_token', response.refreshToken),
-        SecureStore.setItemAsync('token_expiration', response.expiresAt.toISOString()),
-      ]);
+      // Validate refresh token exists and is a valid string
+      if (!refreshToken || typeof refreshToken !== 'string' || refreshToken.trim() === '') {
+        throw new Error('No valid refresh token available');
+      }
 
+      // Attempt to refresh the token with proper error handling
+      let response;
+      try {
+        response = await authService.refreshToken(refreshToken);
+      } catch (serviceError) {
+        console.warn('Auth service refresh token failed:', serviceError);
+        throw new Error('Token refresh failed - please log in again');
+      }
+
+      // Validate response structure
+      if (!response || typeof response !== 'object' || !response.accessToken || !response.refreshToken || !response.user) {
+        throw new Error('Invalid response from token refresh service');
+      }
+      
+      // Store new tokens with individual error handling
+      const storeOperations = [
+        { key: 'auth_token', value: response.accessToken },
+        { key: 'refresh_token', value: response.refreshToken },
+        { key: 'token_expiration', value: response.expiresAt?.toISOString?.() || new Date(Date.now() + 3600000).toISOString() },
+      ];
+
+      for (const { key, value } of storeOperations) {
+        try {
+          if (value && typeof value === 'string') {
+            await SecureStore.setItemAsync(key, value);
+          }
+        } catch (storeError) {
+          console.warn(`Error storing ${key} in SecureStore:`, storeError);
+          // Continue with other operations but log the issue
+        }
+      }
+
+      // Update auth state with validated data
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: {
@@ -316,8 +470,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error) {
       console.error('Error refreshing token:', error);
-      await clearStoredAuth();
-      dispatch({ type: 'LOGOUT' });
+      // Clear potentially corrupted tokens and logout
+      try {
+        await clearStoredAuth();
+      } catch (clearError) {
+        console.error('Error clearing stored auth after refresh failure:', clearError);
+      }
+      
+      try {
+        dispatch({ type: 'LOGOUT' });
+      } catch (dispatchError) {
+        console.error('Error dispatching logout after refresh failure:', dispatchError);
+      }
+      
       throw error;
     }
   }, []);
@@ -341,16 +506,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {state.isLoading ? <AuthLoadingScreen /> : children}
+      {/* 
+        Defensive rendering: Ensure state exists and isLoading is a boolean 
+        This prevents issues if the reducer state becomes corrupted
+      */}
+      {(state && typeof state.isLoading === 'boolean' && state.isLoading) ? (
+        <AuthLoadingScreen />
+      ) : (
+        children || null
+      )}
     </AuthContext.Provider>
   );
 }
 
 // Hook to use auth context
 export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  try {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+      throw new Error('useAuth must be used within an AuthProvider');
+    }
+    
+    // Additional validation to ensure context has required properties
+    if (!context || typeof context !== 'object') {
+      throw new Error('AuthContext is corrupted - invalid context object');
+    }
+
+    // Ensure all required methods exist
+    const requiredMethods = ['login', 'logout', 'signup', 'forgotPassword', 'resetPassword', 'verifyEmail', 'resendVerificationEmail', 'refreshAuthToken', 'clearError'];
+    for (const method of requiredMethods) {
+      if (typeof context[method] !== 'function') {
+        console.error(`AuthContext method '${method}' is not a function`);
+        throw new Error(`AuthContext is corrupted - missing or invalid method: ${method}`);
+      }
+    }
+
+    return context;
+  } catch (error) {
+    console.error('Error in useAuth hook:', error);
+    throw error;
   }
-  return context;
 }

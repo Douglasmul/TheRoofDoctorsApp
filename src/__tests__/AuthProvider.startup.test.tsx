@@ -37,7 +37,8 @@ describe('AuthProvider Startup Behavior', () => {
     const content = fs.readFileSync(filePath, 'utf8');
     
     // Check that the AuthProvider conditionally renders children based on isLoading state
-    const conditionalRenderingPattern = /\{\s*state\.isLoading\s*\?\s*<AuthLoadingScreen\s*\/>\s*:\s*children\s*\}/;
+    // Updated pattern to match the new defensive rendering implementation
+    const conditionalRenderingPattern = /\{\(state\s*&&\s*typeof\s*state\.isLoading\s*===\s*['"]boolean['"]\s*&&\s*state\.isLoading\)\s*\?\s*\(\s*<AuthLoadingScreen\s*\/>\s*\)\s*:\s*\(\s*children\s*\|\|\s*null\s*\)\s*\}/;
     expect(content).toMatch(conditionalRenderingPattern);
   });
 
