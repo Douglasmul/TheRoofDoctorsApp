@@ -113,7 +113,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         SecureStore.getItemAsync('refresh_token'),
       ]);
 
-      if (accessToken && refreshToken) {
+      // Fix: Harden token validation - ensure tokens are non-empty strings
+      if (accessToken && refreshToken && 
+          typeof accessToken === 'string' && accessToken.trim() !== '' &&
+          typeof refreshToken === 'string' && refreshToken.trim() !== '') {
         // Validate token and get user info
         const user = await authService.validateToken(accessToken);
         if (user) {
@@ -136,13 +139,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const clearStoredAuth = async () => {
     try {
-      await Promise.all([
-        SecureStore.deleteItemAsync('auth_token'),
-        SecureStore.deleteItemAsync('refresh_token'),
-        SecureStore.deleteItemAsync('token_expiration'),
-      ]);
+      // Fix: Add defensive error handling - each delete operation handled separately
+      // to prevent one failure from blocking others
+      const deleteOperations = [
+        SecureStore.deleteItemAsync('auth_token').catch(e => console.warn('Failed to delete auth_token:', e)),
+        SecureStore.deleteItemAsync('refresh_token').catch(e => console.warn('Failed to delete refresh_token:', e)),
+        SecureStore.deleteItemAsync('token_expiration').catch(e => console.warn('Failed to delete token_expiration:', e)),
+      ];
+      await Promise.all(deleteOperations);
     } catch (error) {
       console.error('Error clearing stored auth:', error);
+      // Don't throw - clearing auth should always succeed locally for security
     }
   };
 
@@ -157,7 +164,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await Promise.all([
         SecureStore.setItemAsync('auth_token', response.accessToken),
         SecureStore.setItemAsync('refresh_token', response.refreshToken),
-        SecureStore.setItemAsync('token_expiration', response.expiresAt.toISOString()),
+        // Fix: Add null safety for expiresAt to prevent crashes on undefined values
+        SecureStore.setItemAsync('token_expiration', response.expiresAt?.toISOString() || new Date(Date.now() + 3600000).toISOString()),
       ]);
 
       dispatch({
@@ -207,7 +215,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await Promise.all([
         SecureStore.setItemAsync('auth_token', response.accessToken),
         SecureStore.setItemAsync('refresh_token', response.refreshToken),
-        SecureStore.setItemAsync('token_expiration', response.expiresAt.toISOString()),
+        // Fix: Add null safety for expiresAt to prevent crashes on undefined values
+        SecureStore.setItemAsync('token_expiration', response.expiresAt?.toISOString() || new Date(Date.now() + 3600000).toISOString()),
       ]);
 
       dispatch({
@@ -293,7 +302,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshAuthToken = useCallback(async () => {
     try {
       const refreshToken = await SecureStore.getItemAsync('refresh_token');
-      if (!refreshToken) {
+      // Fix: Add comprehensive validation for refresh token
+      if (!refreshToken || typeof refreshToken !== 'string' || refreshToken.trim() === '') {
         throw new Error('No refresh token available');
       }
 
@@ -303,7 +313,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await Promise.all([
         SecureStore.setItemAsync('auth_token', response.accessToken),
         SecureStore.setItemAsync('refresh_token', response.refreshToken),
-        SecureStore.setItemAsync('token_expiration', response.expiresAt.toISOString()),
+        // Fix: Add null safety for expiresAt to prevent crashes on undefined values
+        SecureStore.setItemAsync('token_expiration', response.expiresAt?.toISOString() || new Date(Date.now() + 3600000).toISOString()),
       ]);
 
       dispatch({
