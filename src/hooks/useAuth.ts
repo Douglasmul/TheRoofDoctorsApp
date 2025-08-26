@@ -66,7 +66,8 @@ export function usePermissions() {
   const { user } = useAuth();
 
   const hasPermission = (permission: string): boolean => {
-    return user?.permissions?.includes(permission) || false;
+    // Fix: Ensure permissions is an array before calling includes to prevent crashes
+    return Array.isArray(user?.permissions) && user.permissions.includes(permission);
   };
 
   const hasRole = (role: string): boolean => {
