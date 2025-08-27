@@ -18,6 +18,8 @@ import {
 } from '../types/auth';
 import { authService } from '../services/AuthService';
 import { AuthLoadingScreen } from '../components/auth/AuthLoadingScreen';
+// Import safe DOM utilities to prevent document.head.contains errors
+import { safeDOMOperation } from '../utils/environment';
 
 // Auth Actions
 type AuthAction =
@@ -101,7 +103,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize auth state from stored tokens
   useEffect(() => {
-    initializeAuth();
+    // Ensure safe initialization in React Native environment
+    const safeInitialize = async () => {
+      try {
+        await initializeAuth();
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    };
+    
+    safeInitialize();
   }, []);
 
   const initializeAuth = async () => {
