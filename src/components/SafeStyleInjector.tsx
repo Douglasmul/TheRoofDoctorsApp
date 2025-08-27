@@ -31,10 +31,18 @@ export const SafeStyleInjector: React.FC<SafeStyleInjectorProps> = ({
     }
 
     const injectStyles = () => {
-      // Create style element
-      const style = document.createElement('style');
-      style.id = id;
-      style.textContent = cssText;
+      // Create style element safely
+      const style = safeDOMOperation(() => {
+        const styleEl = document.createElement('style');
+        styleEl.id = id;
+        styleEl.textContent = cssText;
+        return styleEl;
+      }, null);
+
+      if (!style) {
+        console.warn('Failed to create style element - document.createElement not available');
+        return;
+      }
 
       // Safe check if style is already in document head
       // This is where the original error "Cannot read property 'contains' of undefined" occurred
@@ -85,12 +93,17 @@ export const useSafeStyleInjection = (cssText: string, id?: string) => {
       );
 
       if (!existingStyle) {
-        const style = document.createElement('style');
-        style.id = id || 'dynamic-style';
-        style.textContent = cssText;
+        const style = safeDOMOperation(() => {
+          const styleEl = document.createElement('style');
+          styleEl.id = id || 'dynamic-style';
+          styleEl.textContent = cssText;
+          return styleEl;
+        }, null);
         
-        // Use safe wrapper to append to head
-        safeDocumentHeadAppendChild(style);
+        if (style) {
+          // Use safe wrapper to append to head
+          safeDocumentHeadAppendChild(style);
+        }
       }
     };
 
