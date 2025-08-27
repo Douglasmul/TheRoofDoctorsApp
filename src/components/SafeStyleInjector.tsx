@@ -6,7 +6,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
-import { safeDocumentHeadContains, safeDOMOperation, isBrowser } from '../utils/environment';
+import { safeDocumentHeadContains, safeDOMOperation, isBrowser, safeDocumentHeadAppendChild, safeDocumentHeadRemoveChild } from '../utils/environment';
 
 interface SafeStyleInjectorProps {
   cssText: string;
@@ -41,26 +41,21 @@ export const SafeStyleInjector: React.FC<SafeStyleInjectorProps> = ({
       const isAlreadyInHead = safeDocumentHeadContains(style);
       
       if (!isAlreadyInHead) {
-        // Safely append to document head
-        safeDOMOperation(() => {
-          document.head.appendChild(style);
-          return true;
-        }, false);
-        
-        styleElementRef.current = style;
+        // Safely append to document head using the safe wrapper
+        const success = safeDocumentHeadAppendChild(style);
+        if (success) {
+          styleElementRef.current = style;
+        }
       }
 
       return style;
     };
 
     const cleanup = () => {
-      safeDOMOperation(() => {
-        if (styleElementRef.current && safeDocumentHeadContains(styleElementRef.current)) {
-          document.head.removeChild(styleElementRef.current);
-        }
-        return true;
-      }, false);
-      styleElementRef.current = null;
+      if (styleElementRef.current) {
+        safeDocumentHeadRemoveChild(styleElementRef.current);
+        styleElementRef.current = null;
+      }
     };
 
     // Inject styles
@@ -94,10 +89,8 @@ export const useSafeStyleInjection = (cssText: string, id?: string) => {
         style.id = id || 'dynamic-style';
         style.textContent = cssText;
         
-        safeDOMOperation(() => {
-          document.head.appendChild(style);
-          return true;
-        }, false);
+        // Use safe wrapper to append to head
+        safeDocumentHeadAppendChild(style);
       }
     };
 
@@ -105,9 +98,9 @@ export const useSafeStyleInjection = (cssText: string, id?: string) => {
 
     return () => {
       safeDOMOperation(() => {
-        const style = document.getElementById(id || 'dynamic-style');
-        if (style && safeDocumentHeadContains(style)) {
-          document.head.removeChild(style);
+        const style = document.getElementById(id || 'dynamic-style') as HTMLStyleElement;
+        if (style) {
+          safeDocumentHeadRemoveChild(style);
         }
         return true;
       }, false);

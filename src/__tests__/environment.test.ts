@@ -9,6 +9,8 @@ import {
   hasMethod,
   safeDocumentHeadContains,
   safeDOMOperation,
+  safeDocumentHeadAppendChild,
+  safeDocumentHeadRemoveChild,
 } from '../utils/environment';
 
 // Mock DOM for some tests without affecting React Native simulation
@@ -63,7 +65,7 @@ describe('Environment Detection Utilities', () => {
     it('should return fallback value in non-browser environment', () => {
       const operation = () => 'browser-result';
       const fallback = 'fallback-result';
-      
+
       expect(safeDOMOperation(operation, fallback)).toBe(fallback);
     });
 
@@ -74,6 +76,36 @@ describe('Environment Detection Utilities', () => {
       const fallback = 'error-fallback';
       
       expect(safeDOMOperation(throwingOperation, fallback)).toBe(fallback);
+    });
+  });
+
+  describe('safeDocumentHeadAppendChild', () => {
+    it('should return false when document.head is not available', () => {
+      const mockElement = createMockElement();
+      expect(safeDocumentHeadAppendChild(mockElement as any)).toBe(false);
+    });
+
+    it('should return false for null element', () => {
+      expect(safeDocumentHeadAppendChild(null as any)).toBe(false);
+    });
+
+    it('should return false for undefined element', () => {
+      expect(safeDocumentHeadAppendChild(undefined as any)).toBe(false);
+    });
+  });
+
+  describe('safeDocumentHeadRemoveChild', () => {
+    it('should return false when document.head is not available', () => {
+      const mockElement = createMockElement();
+      expect(safeDocumentHeadRemoveChild(mockElement as any)).toBe(false);
+    });
+
+    it('should return false for null element', () => {
+      expect(safeDocumentHeadRemoveChild(null as any)).toBe(false);
+    });
+
+    it('should return false for undefined element', () => {
+      expect(safeDocumentHeadRemoveChild(undefined as any)).toBe(false);
     });
   });
 });
@@ -87,6 +119,19 @@ describe('Real-world usage scenarios', () => {
     expect(() => {
       const isInHead = safeDocumentHeadContains(styleElement as any);
       expect(isInHead).toBe(false); // Should be false in React Native
+    }).not.toThrow();
+  });
+
+  it('should prevent document.head appendChild/removeChild errors', () => {
+    // Test the new safe DOM functions with mock elements
+    const mockElement = createMockElement();
+    
+    expect(() => {
+      const appendResult = safeDocumentHeadAppendChild(mockElement as any);
+      expect(appendResult).toBe(false); // Should be false in React Native
+      
+      const removeResult = safeDocumentHeadRemoveChild(mockElement as any);
+      expect(removeResult).toBe(false); // Should be false in React Native
     }).not.toThrow();
   });
 
