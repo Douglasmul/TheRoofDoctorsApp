@@ -4,7 +4,7 @@
  * Addresses potential document.head.contains errors in React Native environments
  */
 
-import { safeDOMOperation, safeDocumentHeadContains, isBrowser } from './environment';
+import { safeDOMOperation, safeDocumentHeadContains, isBrowser, safeDocumentHeadAppendChild, safeDocumentHeadRemoveChild } from './environment';
 
 // Platform check that works across environments
 const getPlatform = (): string => {
@@ -46,7 +46,7 @@ export const injectAuthStyles = (cssText: string): boolean => {
     const style = document.createElement('style');
     style.id = 'auth-styles';
     style.textContent = cssText;
-    document.head.appendChild(style);
+    safeDocumentHeadAppendChild(style);
     return true;
   }, false);
 };
@@ -64,9 +64,7 @@ export const setTokenMetaTags = (tokens: { access?: string; refresh?: string }):
     // Remove existing token meta tags for security
     const existingMetas = document.querySelectorAll('meta[name^="auth-"]');
     existingMetas.forEach(meta => {
-      if (safeDocumentHeadContains(meta)) {
-        document.head.removeChild(meta);
-      }
+      safeDocumentHeadRemoveChild(meta as HTMLMetaElement);
     });
 
     // In a real app, you probably wouldn't store tokens in meta tags
@@ -75,7 +73,7 @@ export const setTokenMetaTags = (tokens: { access?: string; refresh?: string }):
       const meta = document.createElement('meta');
       meta.name = 'auth-timestamp';
       meta.content = new Date().toISOString();
-      document.head.appendChild(meta);
+      safeDocumentHeadAppendChild(meta);
     }
 
     return true;
@@ -93,16 +91,14 @@ export const clearAuthDOM = (): boolean => {
   return safeDOMOperation(() => {
     // Clear auth styles
     const authStyle = document.getElementById('auth-styles');
-    if (authStyle && safeDocumentHeadContains(authStyle)) {
-      document.head.removeChild(authStyle);
+    if (authStyle) {
+      safeDocumentHeadRemoveChild(authStyle as HTMLStyleElement);
     }
 
     // Clear auth meta tags
     const authMetas = document.querySelectorAll('meta[name^="auth-"]');
     authMetas.forEach(meta => {
-      if (safeDocumentHeadContains(meta)) {
-        document.head.removeChild(meta);
-      }
+      safeDocumentHeadRemoveChild(meta as HTMLMetaElement);
     });
 
     return true;

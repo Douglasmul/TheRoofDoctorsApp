@@ -67,3 +67,43 @@ export const safeDOMOperation = <T>(operation: () => T, fallbackValue: T): T => 
     return fallbackValue;
   }
 };
+
+/**
+ * Safely appends an element to document.head
+ * Prevents errors when document.head is undefined (React Native)
+ */
+export const safeDocumentHeadAppendChild = (element: HTMLElement): boolean => {
+  if (!hasDocumentHead() || !element) {
+    return false;
+  }
+  
+  try {
+    document.head.appendChild(element);
+    return true;
+  } catch (error) {
+    console.warn('Error appending to document.head:', error);
+    return false;
+  }
+};
+
+/**
+ * Safely removes an element from document.head
+ * Prevents errors when document.head is undefined (React Native)
+ */
+export const safeDocumentHeadRemoveChild = (element: HTMLElement): boolean => {
+  if (!hasDocumentHead() || !element) {
+    return false;
+  }
+  
+  try {
+    // Double-check that the element is actually in the head before removing
+    if (safeDocumentHeadContains(element)) {
+      document.head.removeChild(element);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.warn('Error removing from document.head:', error);
+    return false;
+  }
+};
